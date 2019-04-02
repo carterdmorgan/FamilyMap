@@ -25,6 +25,7 @@ import carterdmorgan.com.familymap.api.request.RegisterUserRequest;
 import carterdmorgan.com.familymap.api.result.CurrentEventResult;
 import carterdmorgan.com.familymap.api.result.CurrentPersonResult;
 import carterdmorgan.com.familymap.api.result.UserResult;
+import carterdmorgan.com.familymap.data.UserDataStore;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -236,47 +237,9 @@ public class LoginFragment extends Fragment {
      * >Communicating with Other Fragments</a> for more information.
      */
     public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
-        void onUserLoaded(UserResult userResult, CurrentPersonResult currentPersonResult, CurrentEventResult currentEventResult);
+        void onUserLoaded();
     }
 
-    private void getAllPersons(final FamilyMapService fmService, final UserResult userResult) {
-        Call<CurrentPersonResult> personCall = fmService.getAllPersonsForCurrentUser(userResult.getAuthToken());
-        personCall.enqueue(new Callback<CurrentPersonResult>() {
-            @Override
-            public void onResponse(Call<CurrentPersonResult> call, Response<CurrentPersonResult> response) {
-                if (response.code() == 200) {
-                    CurrentPersonResult currentPersonResult = response.body();
-                    getAllEvents(fmService, userResult, currentPersonResult);
-                } else {
-                    Toast.makeText(getContext(), "Failed to retrieve family data.", Toast.LENGTH_SHORT).show();
-                }
-            }
-
-            @Override
-            public void onFailure(Call<CurrentPersonResult> call, Throwable t) {
-                t.printStackTrace();
-                Toast.makeText(getContext(), "Failed to retrieve family data.", Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void getAllEvents(FamilyMapService fmService, final UserResult userResult, final CurrentPersonResult currentPersonResult) {
-        Call<CurrentEventResult> eventCall = fmService.getAllEventsForPerson(userResult.getAuthToken());
-        eventCall.enqueue(new Callback<CurrentEventResult>() {
-            @Override
-            public void onResponse(Call<CurrentEventResult> call, Response<CurrentEventResult> response) {
-                CurrentEventResult currentEventResult = response.body();
-                mListener.onUserLoaded(userResult, currentPersonResult, currentEventResult);
-            }
-
-            @Override
-            public void onFailure(Call<CurrentEventResult> call, Throwable t) {
-                t.printStackTrace();
-                Toast.makeText(getContext(), "Failed to retrieve event data.", Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
 
     public void registerUser() {
         String serverHost = etServerHost.getText().toString();
@@ -287,6 +250,9 @@ public class LoginFragment extends Fragment {
         final String lastName = etLastName.getText().toString();
         String email = etEmail.getText().toString();
         int gender = rgGender.getCheckedRadioButtonId();
+
+        UserDataStore.getInstance().setServerHost(serverHost);
+        UserDataStore.getInstance().setServerPort(serverPort);
 
 
         Retrofit retrofit = new Retrofit.Builder()
@@ -312,7 +278,18 @@ public class LoginFragment extends Fragment {
             public void onResponse(Call<UserResult> call, Response<UserResult> response) {
                 if (response.code() == 200) {
                     UserResult userResult = response.body();
-                    getAllPersons(fmService, userResult);
+                    UserDataStore.getInstance().setUserResult(userResult);
+                    UserDataStore.getInstance().retrieveFamilyData(fmService, new UserDataStore.LoadFamilyDataListener() {
+                        @Override
+                        public void onSuccess() {
+                            mListener.onUserLoaded();
+                        }
+
+                        @Override
+                        public void onFailure() {
+                            Toast.makeText(getContext(), "Register failed.", Toast.LENGTH_SHORT).show();
+                        }
+                    });
                 } else {
                     try {
                         Log.d(TAG, "onResponse: failed: " + response.errorBody().string());
@@ -337,6 +314,9 @@ public class LoginFragment extends Fragment {
         String userName = etUserName.getText().toString();
         String password = etPassword.getText().toString();
 
+        UserDataStore.getInstance().setServerHost(serverHost);
+        UserDataStore.getInstance().setServerPort(serverPort);
+
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(String.format("http://%s:%s", serverHost, serverPort))
                 .addConverterFactory(GsonConverterFactory.create())
@@ -352,7 +332,18 @@ public class LoginFragment extends Fragment {
             public void onResponse(Call<UserResult> call, Response<UserResult> response) {
                 if (response.code() == 200) {
                     UserResult userResult = response.body();
-                    getAllPersons(fmService, userResult);
+                    UserDataStore.getInstance().setUserResult(userResult);
+                    UserDataStore.getInstance().retrieveFamilyData(fmService, new UserDataStore.LoadFamilyDataListener() {
+                        @Override
+                        public void onSuccess() {
+                            mListener.onUserLoaded();
+                        }
+
+                        @Override
+                        public void onFailure() {
+                            Toast.makeText(getContext(), "Sign in failed.", Toast.LENGTH_SHORT).show();
+                        }
+                    });
                 } else {
                     try {
                         Log.d(TAG, "onResponse: failed: " + response.errorBody().string());

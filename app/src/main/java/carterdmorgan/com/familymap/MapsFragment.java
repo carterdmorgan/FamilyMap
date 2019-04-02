@@ -1,19 +1,26 @@
 package carterdmorgan.com.familymap;
 
 import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -27,6 +34,8 @@ import carterdmorgan.com.familymap.api.network.FamilyMapService;
 import carterdmorgan.com.familymap.api.result.CurrentEventResult;
 import carterdmorgan.com.familymap.api.result.CurrentPersonResult;
 import carterdmorgan.com.familymap.api.result.UserResult;
+import carterdmorgan.com.familymap.data.MapType;
+import carterdmorgan.com.familymap.data.UserDataStore;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
@@ -38,21 +47,10 @@ import static carterdmorgan.com.familymap.MainActivity.TAG;
  * Activities that contain this fragment must implement the
  * {@link MapsFragment.OnFragmentInteractionListener} interface
  * to handle interaction events.
- * Use the {@link MapsFragment#newInstance} factory method to
- * create an instance of this fragment.
  */
 public class MapsFragment extends Fragment implements GoogleMap.OnMarkerClickListener, OnMapReadyCallback {
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_USER = "user";
-    private static final String ARG_PERSON = "persons";
-    private static final String ARG_EVENT = "events";
-
     public static final String TAG = MapsFragment.class.getSimpleName();
 
-    // TODO: Rename and change types of parameters
-    private UserResult userResult;
-    private CurrentPersonResult currentPersonResult;
-    private CurrentEventResult currentEventResult;
     private Map<Marker, Event> markerEventMap;
 
     private TextView tvEventPerson;
@@ -67,31 +65,16 @@ public class MapsFragment extends Fragment implements GoogleMap.OnMarkerClickLis
         // Required empty public constructor
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @return A new instance of fragment MapsFragment.
-     */
-    public static MapsFragment newInstance(UserResult userResult, CurrentPersonResult currentPersonResult, CurrentEventResult currentEventResult) {
-        MapsFragment fragment = new MapsFragment();
-        Bundle args = new Bundle();
-        args.putParcelable(ARG_USER, userResult);
-        args.putParcelable(ARG_PERSON, currentPersonResult);
-        args.putParcelable(ARG_EVENT, currentEventResult);
-        fragment.setArguments(args);
-        return fragment;
-    }
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
         markerEventMap = new HashMap<>();
-        if (getArguments() != null) {
-            userResult = getArguments().getParcelable(ARG_USER);
-            currentPersonResult = getArguments().getParcelable(ARG_PERSON);
-            currentEventResult = getArguments().getParcelable(ARG_EVENT);
-        }
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
     }
 
     @Override
@@ -110,11 +93,31 @@ public class MapsFragment extends Fragment implements GoogleMap.OnMarkerClickLis
 
         supportMapFragment.getMapAsync(this);
 
-        Log.d(TAG, "onCreateView: userResult: " + userResult.toString());
-        Log.d(TAG, "onCreateView: currentPersonResult: " + currentPersonResult.toString());
-        Log.d(TAG, "onCreateView: currentEventResult: " + currentEventResult.toString());
-
         return view;
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.menu_main, menu);
+        super.onCreateOptionsMenu(menu, inflater);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch(item.getItemId()) {
+            case(R.id.menu_main_settings):
+                Intent intent = new Intent(getContext(), SettingsActivity.class);
+                startActivity(intent);
+                break;
+            case (R.id.menu_main_search):
+                Toast.makeText(getContext(), "Will launch search activity.", Toast.LENGTH_SHORT).show();
+                break;
+            case (R.id.menu_main_filter):
+                Toast.makeText(getContext(), "Will launch filter activity.", Toast.LENGTH_SHORT).show();
+                break;
+        }
+
+        return true;
     }
 
     @Override
@@ -137,7 +140,7 @@ public class MapsFragment extends Fragment implements GoogleMap.OnMarkerClickLis
     @Override
     public boolean onMarkerClick(Marker marker) {
         Event event = markerEventMap.get(marker);
-        for (Person person : currentPersonResult.getData()) {
+        for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
             if (person.getPersonID().equals(event.getPersonID())) {
                 tvEventPerson.setText(person.getFirstName() + " " + person.getLastName());
             }
@@ -152,11 +155,32 @@ public class MapsFragment extends Fragment implements GoogleMap.OnMarkerClickLis
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        googleMap.setOnMarkerClickListener(this);
+        switch (UserDataStore.getInstance().getMapType()) {
+            case MapType.NORMAL:
+                googleMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+                break;
+            case MapType.HYBRID:
+                googleMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+                break;
+            case MapType.SATELLITE:
+                googleMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+                break;
+            case MapType.TERRAIN:
+                googleMap.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
+                break;
+            default:
+                googleMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+                break;
+        }
 
-        for (Event event : currentEventResult.getData()) {
+
+        googleMap.setOnMarkerClickListener(this);
+        Map<String, Float> typeColorMap = Event.getTypeColorMap();
+
+        for (Event event : UserDataStore.getInstance().getCurrentEventResult().getData()) {
+            Float color = typeColorMap.get(event.getEventType());
             LatLng location = new LatLng(event.getLatitude(), event.getLongitude());
-            MarkerOptions markerOptions = new MarkerOptions().position(location);
+            MarkerOptions markerOptions = new MarkerOptions().position(location).icon(BitmapDescriptorFactory.defaultMarker(color));
             Marker marker = googleMap.addMarker(markerOptions);
             markerEventMap.put(marker, event);
         }

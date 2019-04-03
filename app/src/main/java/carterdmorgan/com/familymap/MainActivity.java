@@ -13,7 +13,7 @@ import carterdmorgan.com.familymap.api.result.CurrentPersonResult;
 import carterdmorgan.com.familymap.api.result.UserResult;
 import carterdmorgan.com.familymap.data.UserDataStore;
 
-public class MainActivity extends AppCompatActivity implements LoginFragment.OnFragmentInteractionListener, MapsFragment.OnFragmentInteractionListener {
+public class MainActivity extends AppCompatActivity implements LoginFragment.OnFragmentInteractionListener {
 
     public static final String TAG = MainActivity.class.getSimpleName();
 
@@ -56,10 +56,5 @@ public class MainActivity extends AppCompatActivity implements LoginFragment.OnF
         ft.replace(R.id.fragment_placeholder, new MapsFragment());
         ft.addToBackStack("maps");
         ft.commit();
-    }
-
-    @Override
-    public void onFragmentInteraction(Uri uri) {
-
     }
 }

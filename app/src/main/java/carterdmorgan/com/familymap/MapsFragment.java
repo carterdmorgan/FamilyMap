@@ -2,12 +2,11 @@ package carterdmorgan.com.familymap;
 
 import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -15,6 +14,8 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -25,40 +26,46 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import carterdmorgan.com.familymap.api.model.Event;
 import carterdmorgan.com.familymap.api.model.Person;
-import carterdmorgan.com.familymap.data.FilterAdapter;
 import carterdmorgan.com.familymap.data.MapType;
+import carterdmorgan.com.familymap.data.RelationshipLines;
 import carterdmorgan.com.familymap.data.UserDataStore;
 
 
 /**
  * A simple {@link Fragment} subclass.
  * Activities that contain this fragment must implement the
- * {@link MapsFragment.OnFragmentInteractionListener} interface
  * to handle interaction events.
  */
-public class MapsFragment extends Fragment implements GoogleMap.OnMarkerClickListener, OnMapReadyCallback {
+public class MapsFragment extends Fragment implements OnMapReadyCallback {
     public static final String TAG = MapsFragment.class.getSimpleName();
 
     private TextView tvEventPerson;
     private TextView tvEventType;
     private TextView tvEventDate;
     private TextView tvEventLocation;
+    private ImageView ivGenderIcon;
+    private LinearLayout llEventInfo;
     private SupportMapFragment supportMapFragment;
+    private Person currentPerson;
 
     private ArrayList<Person> mothersSide;
     private ArrayList<Person> fathersSide;
     private Map<Marker, Event> markerEventMap;
+    private ArrayList<Marker> markers = new ArrayList<>();
 
-    public MapsFragment() {
-        // Required empty public constructor
-    }
+    public MapsFragment() { }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -105,13 +112,24 @@ public class MapsFragment extends Fragment implements GoogleMap.OnMarkerClickLis
         tvEventType = view.findViewById(R.id.event_type_text_view);
         tvEventLocation = view.findViewById(R.id.event_location_text_view);
         tvEventDate = view.findViewById(R.id.event_date_text_view);
+        ivGenderIcon = view.findViewById(R.id.gender_icon_image_view);
+        llEventInfo = view.findViewById(R.id.event_info_linear_layout);
+
+        llEventInfo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (!TextUtils.isEmpty(tvEventPerson.getText().toString())) {
+                    Intent intent = new Intent(getContext(), PersonActivity.class);
+                    intent.putExtra("person", currentPerson);
+                    startActivity(intent);
+                }
+            }
+        });
 
         supportMapFragment = (SupportMapFragment) getChildFragmentManager()
                 .findFragmentById(R.id.support_maps_fragment);
 
         supportMapFragment.getMapAsync(this);
-
-
 
         return view;
     }
@@ -152,22 +170,6 @@ public class MapsFragment extends Fragment implements GoogleMap.OnMarkerClickLis
     }
 
     @Override
-    public boolean onMarkerClick(Marker marker) {
-        Event event = markerEventMap.get(marker);
-        for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
-            if (person.getPersonID().equals(event.getPersonID())) {
-                tvEventPerson.setText(person.getFirstName() + " " + person.getLastName());
-            }
-        }
-
-        tvEventType.setText(event.getEventType());
-        tvEventLocation.setText(event.getCity() + ", " + event.getCountry());
-        tvEventDate.setText(Integer.toString(event.getYear()));
-
-        return true;
-    }
-
-    @Override
     public void onMapReady(GoogleMap googleMap) {
         switch (UserDataStore.getInstance().getMapType()) {
             case MapType.NORMAL:
@@ -188,7 +190,7 @@ public class MapsFragment extends Fragment implements GoogleMap.OnMarkerClickLis
         }
 
 
-        googleMap.setOnMarkerClickListener(this);
+        googleMap.setOnMarkerClickListener(getMarkerClickListener(googleMap));
 
         for (Event event : UserDataStore.getInstance().getCurrentEventResult().getData()) {
             boolean placeMarker = isMarkerPlaced(event);
@@ -198,8 +200,250 @@ public class MapsFragment extends Fragment implements GoogleMap.OnMarkerClickLis
                 LatLng location = new LatLng(event.getLatitude(), event.getLongitude());
                 MarkerOptions markerOptions = new MarkerOptions().position(location).icon(BitmapDescriptorFactory.defaultMarker(color));
                 Marker marker = googleMap.addMarker(markerOptions);
+                markers.add(marker);
                 markerEventMap.put(marker, event);
             }
+        }
+
+        if (UserDataStore.getInstance().isShowLifeStoryLines())
+            drawLifeStoryLines(googleMap);
+    }
+
+    private GoogleMap.OnMarkerClickListener getMarkerClickListener(final GoogleMap googleMap) {
+        return new GoogleMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker) {
+                Event event = markerEventMap.get(marker);
+                Person person = null;
+                Person spouse = null;
+
+                for (Person p : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+                    if (p.getPersonID().equals(event.getPersonID())) {
+                        tvEventPerson.setText(p.getFirstName() + " " + p.getLastName());
+                        person = p;
+                        currentPerson = p;
+                    }
+                }
+
+                tvEventType.setText(event.getEventType());
+                tvEventLocation.setText(event.getCity() + ", " + event.getCountry());
+                tvEventDate.setText(Integer.toString(event.getYear()));
+
+                if (person.getGender().equals("f")) {
+                    ivGenderIcon.setImageDrawable(getContext().getDrawable(R.drawable.ic_person_pink_100_24dp));
+                } else {
+                    ivGenderIcon.setImageDrawable(getContext().getDrawable(R.drawable.ic_person_blue_400_24dp));
+                }
+
+                if (UserDataStore.getInstance().isShowSpouseLines()) {
+                    Log.d(TAG, "onMarkerClick: showing lines");
+                    int color = 0;
+                    if (UserDataStore.getInstance().getSpouseLineColor().equals(RelationshipLines.RED)) {
+                        color = Color.RED;
+                    } else if (UserDataStore.getInstance().getSpouseLineColor().equals(RelationshipLines.BLUE)) {
+                        color = Color.BLUE;
+                    } else if (UserDataStore.getInstance().getSpouseLineColor().equals(RelationshipLines.GREEN)) {
+                        color = Color.GREEN;
+                    }
+
+                    Log.d(TAG, "onMarkerClick: person: " + person.toString());
+                    if (person != null && person.getSpouse() != null) {
+                        Log.d(TAG, "onMarkerClick: second layer");
+                        for (Person p : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+                            if (person.getSpouse() != null && p.getPersonID().equals(person.getSpouse())) {
+                                spouse = p;
+                                break;
+                            }
+                        }
+
+                        if (spouse != null) {
+                            ArrayList<Event> spouseEvents = new ArrayList<>();
+                            ArrayList<Event> allEvents = new ArrayList<>();
+
+                            for (Marker m : markers) {
+                                allEvents.add(markerEventMap.get(m));
+                            }
+
+                            for (Event e : allEvents) {
+                                if (e.getPersonID().equals(spouse.getPersonID())) {
+                                    spouseEvents.add(e);
+                                }
+                            }
+
+                            Event earliestEvent = spouseEvents.get(0);
+
+                            for (Event e : spouseEvents) {
+                                if (e.getYear() < earliestEvent.getYear()) {
+                                    earliestEvent = e;
+                                }
+                            }
+
+
+                            Polyline line = googleMap.addPolyline(new PolylineOptions()
+                                    .add(new LatLng(event.getLatitude(), event.getLongitude()),
+                                            new LatLng(earliestEvent.getLatitude(), earliestEvent.getLongitude()))
+                                    .width(18)
+                                    .color(color));
+                        }
+                    }
+
+                }
+
+                if (UserDataStore.getInstance().isShowFamilyTreeLines()) {
+                    if (person != null) {
+                        int color = 0;
+                        if (UserDataStore.getInstance().getFamilyTreeLineColor().equals(RelationshipLines.RED)) {
+                            color = Color.RED;
+                        } else if (UserDataStore.getInstance().getFamilyTreeLineColor().equals(RelationshipLines.BLUE)) {
+                            color = Color.BLUE;
+                        } else if (UserDataStore.getInstance().getFamilyTreeLineColor().equals(RelationshipLines.GREEN)) {
+                            color = Color.GREEN;
+                        }
+
+                        recursivelyDrawFamilyTreeLines(googleMap, person, event, 18.0f, color);
+                    }
+                }
+
+                return true;
+            }
+        };
+    }
+
+    private void drawLifeStoryLines(GoogleMap googleMap) {
+        Log.d(TAG, "drawLifeStoryLines: begins");
+
+        int color = 0;
+        if (UserDataStore.getInstance().getLifeStoryLineColor().equals(RelationshipLines.RED)) {
+            color = Color.RED;
+        } else if (UserDataStore.getInstance().getLifeStoryLineColor().equals(RelationshipLines.BLUE)) {
+            color = Color.BLUE;
+        } else if (UserDataStore.getInstance().getLifeStoryLineColor().equals(RelationshipLines.GREEN)) {
+            color = Color.GREEN;
+        }
+
+        Map<Person, ArrayList<Event>> lifeStories = new HashMap<>();
+        ArrayList<Event> allEvents = new ArrayList<>();
+
+        for (Marker marker : markers) {
+            allEvents.add(markerEventMap.get(marker));
+        }
+
+        // Populate life stories
+        for (Event event : allEvents) {
+            for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+                if (person.getPersonID().equals(event.getPersonID())) {
+                    if (lifeStories.get(person) == null) {
+                        ArrayList<Event> currentEvent = new ArrayList<>();
+                        currentEvent.add(event);
+                        lifeStories.put(person, currentEvent);
+                    } else {
+                        lifeStories.get(person).add(event);
+                    }
+                    break;
+                }
+            }
+        }
+
+        Iterator it = lifeStories.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry) it.next();
+            Person person = (Person) pair.getKey();
+            ArrayList<Event> events = (ArrayList<Event>) pair.getValue();
+            it.remove(); // avoids a ConcurrentModificationException
+
+            Collections.sort(events, new Comparator<Event>() {
+                @Override
+                public int compare(Event o1, Event o2) {
+                    Integer year1 = new Integer(o1.getYear());
+                    Integer year2 = new Integer(o2.getYear());
+                    return year1.compareTo(year2);
+                }
+            });
+
+            for (int i = 0; i < events.size() - 1; i++) {
+                Event event0 = events.get(i);
+                Event event1 = events.get(i+1);
+                Polyline line = googleMap.addPolyline(new PolylineOptions()
+                        .add(new LatLng(event0.getLatitude(), event0.getLongitude()),
+                                new LatLng(event1.getLatitude(), event1.getLongitude()))
+                        .width(18)
+                        .color(color));
+            }
+        }
+    }
+
+    private void recursivelyDrawFamilyTreeLines(GoogleMap googleMap, Person person, Event event, float width, int color) {
+        Person mother = null;
+        Person father = null;
+
+        for (Person p : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+            if (p.getPersonID().equals(person.getMother())) {
+                mother = p;
+                break;
+            }
+        }
+
+        for (Person p : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+            if (p.getPersonID().equals(person.getFather())) {
+                father = p;
+                break;
+            }
+        }
+
+        if (mother != null) {
+            ArrayList<Event> events = new ArrayList<>();
+
+            for (Event e : UserDataStore.getInstance().getCurrentEventResult().getData()) {
+                if (e.getPersonID().equals(mother.getPersonID())) {
+                    events.add(e);
+                }
+            }
+
+            Event earliestEvent = events.get(0);
+
+            for (Event e : events) {
+                if (e.getYear() < earliestEvent.getYear()) {
+                    earliestEvent = e;
+                }
+            }
+
+            Polyline line = googleMap.addPolyline(new PolylineOptions()
+                    .add(new LatLng(event.getLatitude(), event.getLongitude()),
+                            new LatLng(earliestEvent.getLatitude(), earliestEvent.getLongitude()))
+                    .width(width)
+                    .color(color));
+
+            width -= 3.0f;
+
+            recursivelyDrawFamilyTreeLines(googleMap, mother, earliestEvent, width, color);
+        }
+
+        if (father != null) {
+            ArrayList<Event> events = new ArrayList<>();
+
+            for (Event e : UserDataStore.getInstance().getCurrentEventResult().getData()) {
+                if (e.getPersonID().equals(father.getPersonID())) {
+                    events.add(e);
+                }
+            }
+
+            Event earliestEvent = events.get(0);
+
+            for (Event e : events) {
+                if (e.getYear() < earliestEvent.getYear()) {
+                    earliestEvent = e;
+                }
+            }
+
+            Polyline line = googleMap.addPolyline(new PolylineOptions()
+                    .add(new LatLng(event.getLatitude(), event.getLongitude()),
+                            new LatLng(earliestEvent.getLatitude(), earliestEvent.getLongitude()))
+                    .width(width)
+                    .color(color));
+
+            width -= 3.0f;
+
+            recursivelyDrawFamilyTreeLines(googleMap, father, earliestEvent, width, color);
         }
     }
 
@@ -275,20 +519,4 @@ public class MapsFragment extends Fragment implements GoogleMap.OnMarkerClickLis
 
         return false;
     }
-
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     * <p>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
-     */
-    public interface OnFragmentInteractionListener {
-        void onFragmentInteraction(Uri uri);
-    }
-
-
 }

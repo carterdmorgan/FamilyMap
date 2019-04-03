@@ -2,6 +2,8 @@
 <resources>
     <dimen name="settings_title_size">18sp</dimen>
     <dimen name="settings_subtitle_size">10sp</dimen>
+    <dimen name="category_title_size">16sp</dimen>
     <dimen name="spinner_title_spacing">10dp</dimen>
     <dimen name="switch_right_spacing">5dp</dimen>
+    <dimen name="category_icon_spacing">5dp</dimen>
 </resources>

@@ -33,6 +33,14 @@ public class UserDataStore {
     private boolean showMale = true;
     private boolean showFemale = true;
 
+    private String lifeStoryLineColor = "Red";
+    private String familyTreeLineColor = "Green";
+    private String spouseLineColor = "Blue";
+
+    private boolean showLifeStoryLines = false;
+    private boolean showFamilyTreeLines = false;
+    private boolean showSpouseLines = false;
+
     public static UserDataStore getInstance() {
         return instance;
     }
@@ -214,5 +222,77 @@ public class UserDataStore {
 
     public Map<String, Float> getMarkerColors() {
         return markerColors;
+    }
+
+    public String getLifeStoryLineColor() {
+        return lifeStoryLineColor;
+    }
+
+    public void setLifeStoryLineColor(String lifeStoryLineColor) {
+        this.lifeStoryLineColor = lifeStoryLineColor;
+    }
+
+    public String getFamilyTreeLineColor() {
+        return familyTreeLineColor;
+    }
+
+    public void setFamilyTreeLineColor(String familyTreeLineColor) {
+        this.familyTreeLineColor = familyTreeLineColor;
+    }
+
+    public String getSpouseLineColor() {
+        return spouseLineColor;
+    }
+
+    public void setSpouseLineColor(String spouseLineColor) {
+        this.spouseLineColor = spouseLineColor;
+    }
+
+    public boolean isShowLifeStoryLines() {
+        return showLifeStoryLines;
+    }
+
+    public void setShowLifeStoryLines(boolean showLifeStoryLines) {
+        this.showLifeStoryLines = showLifeStoryLines;
+    }
+
+    public boolean isShowFamilyTreeLines() {
+        return showFamilyTreeLines;
+    }
+
+    public void setShowFamilyTreeLines(boolean showFamilyTreeLines) {
+        this.showFamilyTreeLines = showFamilyTreeLines;
+    }
+
+    public boolean isShowSpouseLines() {
+        return showSpouseLines;
+    }
+
+    public void setShowSpouseLines(boolean showSpouseLines) {
+        this.showSpouseLines = showSpouseLines;
+    }
+
+    @Override
+    public String toString() {
+        return "UserDataStore{" +
+                "userResult=" + userResult +
+                ", currentEventResult=" + currentEventResult +
+                ", currentPersonResult=" + currentPersonResult +
+                ", serverHost='" + serverHost + '\'' +
+                ", serverPort='" + serverPort + '\'' +
+                ", mapType=" + mapType +
+                ", filterPreferences=" + filterPreferences +
+                ", markerColors=" + markerColors +
+                ", showFather=" + showFather +
+                ", showMother=" + showMother +
+                ", showMale=" + showMale +
+                ", showFemale=" + showFemale +
+                ", lifeStoryLineColor='" + lifeStoryLineColor + '\'' +
+                ", familyTreeLineColor='" + familyTreeLineColor + '\'' +
+                ", spouseLineColor='" + spouseLineColor + '\'' +
+                ", showLifeStoryLines=" + showLifeStoryLines +
+                ", showFamilyTreeLines=" + showFamilyTreeLines +
+                ", showSpouseLines=" + showSpouseLines +
+                '}';
     }
 }

@@ -36,7 +36,8 @@
             android:name="org.apache.http.legacy"
             android:required="false" />
 
-        <activity android:name=".FilterActivity"></activity>
+        <activity android:name=".FilterActivity" />
+        <activity android:name=".PersonActivity"></activity>
     </application>
 
 </manifest>

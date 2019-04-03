@@ -48,6 +48,8 @@ public class MainActivity extends AppCompatActivity implements LoginFragment.OnF
 
     @Override
     public void onUserLoaded() {
+        UserDataStore.getInstance().initializeUserPreferences();
+
         // Begin the transaction
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
         // Replace the contents of the container with the new fragment

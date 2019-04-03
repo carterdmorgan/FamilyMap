@@ -1,8 +1,14 @@
 package carterdmorgan.com.familymap.data;
 
-import android.content.Context;
-import android.widget.Toast;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
+import carterdmorgan.com.familymap.api.model.Event;
 import carterdmorgan.com.familymap.api.network.FamilyMapService;
 import carterdmorgan.com.familymap.api.result.CurrentEventResult;
 import carterdmorgan.com.familymap.api.result.CurrentPersonResult;
@@ -19,6 +25,13 @@ public class UserDataStore {
     private String serverHost;
     private String serverPort;
     private int mapType = 0;
+    private Map<String, Boolean> filterPreferences = new HashMap<>();
+    private Map<String, Float> markerColors = new HashMap<>();
+
+    private boolean showFather = true;
+    private boolean showMother = true;
+    private boolean showMale = true;
+    private boolean showFemale = true;
 
     public static UserDataStore getInstance() {
         return instance;
@@ -26,8 +39,22 @@ public class UserDataStore {
 
     private UserDataStore() { }
 
-    public void retrieveFamilyData( final FamilyMapService fmService, LoadFamilyDataListener listener) {
+    public void retrieveFamilyData(final FamilyMapService fmService, LoadFamilyDataListener listener) {
         getAllPersons(fmService, listener);
+    }
+
+    public void initializeUserPreferences() {
+        for (String eventType : this.getEventTypes()) {
+            filterPreferences.put(eventType, true);
+        }
+
+        float baseColor = 0.0f;
+        float increment = 15.0f;
+
+        for (String eventType : this.getEventTypes()) {
+            this.markerColors.put(eventType, baseColor);
+            baseColor += increment;
+        }
     }
 
     private void getAllPersons(final FamilyMapService fmService, final LoadFamilyDataListener listener) {
@@ -74,6 +101,30 @@ public class UserDataStore {
         instance.setUserResult(null);
         instance.setCurrentEventResult(null);
         instance.setCurrentPersonResult(null);
+    }
+
+    public ArrayList<String> getEventTypes() {
+        Set<String> types = new HashSet<>();
+
+        for (Event event : currentEventResult.getData()) {
+            types.add(event.getEventType().toLowerCase());
+        }
+
+        ArrayList<String> listTypes = new ArrayList<>();
+        listTypes.addAll(types);
+
+        Collections.sort(listTypes, new Comparator<String>() {
+            @Override
+            public int compare(String s1, String s2) {
+                return s1.compareToIgnoreCase(s2);
+            }
+        });
+
+        return listTypes;
+    }
+
+    public Map<String, Boolean> getFilterPreferences() {
+        return filterPreferences;
     }
 
     public UserResult getUserResult() {
@@ -127,5 +178,41 @@ public class UserDataStore {
     public interface LoadFamilyDataListener {
         void onSuccess();
         void onFailure();
+    }
+
+    public boolean isShowFather() {
+        return showFather;
+    }
+
+    public void setShowFather(boolean showFather) {
+        this.showFather = showFather;
+    }
+
+    public boolean isShowMother() {
+        return showMother;
+    }
+
+    public void setShowMother(boolean showMother) {
+        this.showMother = showMother;
+    }
+
+    public boolean isShowMale() {
+        return showMale;
+    }
+
+    public void setShowMale(boolean showMale) {
+        this.showMale = showMale;
+    }
+
+    public boolean isShowFemale() {
+        return showFemale;
+    }
+
+    public void setShowFemale(boolean showFemale) {
+        this.showFemale = showFemale;
+    }
+
+    public Map<String, Float> getMarkerColors() {
+        return markerColors;
     }
 }

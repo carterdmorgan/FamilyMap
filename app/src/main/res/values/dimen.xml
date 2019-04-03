@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="settings_title_size">18dp</dimen>
-    <dimen name="settings_subtitle_size">10dp</dimen>
+    <dimen name="settings_title_size">18sp</dimen>
+    <dimen name="settings_subtitle_size">10sp</dimen>
     <dimen name="spinner_title_spacing">10dp</dimen>
     <dimen name="switch_right_spacing">5dp</dimen>
 </resources>

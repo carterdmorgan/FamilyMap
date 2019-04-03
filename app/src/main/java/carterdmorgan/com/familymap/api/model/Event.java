@@ -35,23 +35,6 @@ public class Event implements Parcelable {
         this.year = year;
     }
 
-    public static Map<String, Float> getTypeColorMap() {
-        Map<String, Float> map = new HashMap<>();
-        map.put("Birth", BitmapDescriptorFactory.HUE_AZURE);
-        map.put("Christening", BitmapDescriptorFactory.HUE_ORANGE);
-        map.put("Baptism", BitmapDescriptorFactory.HUE_YELLOW);
-        map.put("Joined Military", BitmapDescriptorFactory.HUE_GREEN);
-        map.put("First Communion", BitmapDescriptorFactory.HUE_CYAN);
-        map.put("Won Lottery", BitmapDescriptorFactory.HUE_RED);
-        map.put("Bought First Home", BitmapDescriptorFactory.HUE_BLUE);
-        map.put("Saved a Life", BitmapDescriptorFactory.HUE_VIOLET);
-        map.put("Started First Job", BitmapDescriptorFactory.HUE_MAGENTA);
-        map.put("Death", BitmapDescriptorFactory.HUE_ROSE);
-        map.put("Marriage", 45.0f);
-
-        return map;
-    }
-
     public String getEventID() {
         return eventID;
     }

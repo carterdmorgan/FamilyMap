@@ -6,6 +6,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -16,7 +18,6 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
@@ -25,21 +26,15 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 import carterdmorgan.com.familymap.api.model.Event;
 import carterdmorgan.com.familymap.api.model.Person;
-import carterdmorgan.com.familymap.api.network.FamilyMapService;
-import carterdmorgan.com.familymap.api.result.CurrentEventResult;
-import carterdmorgan.com.familymap.api.result.CurrentPersonResult;
-import carterdmorgan.com.familymap.api.result.UserResult;
+import carterdmorgan.com.familymap.data.FilterAdapter;
 import carterdmorgan.com.familymap.data.MapType;
 import carterdmorgan.com.familymap.data.UserDataStore;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
-
-import static carterdmorgan.com.familymap.MainActivity.TAG;
 
 
 /**
@@ -51,15 +46,15 @@ import static carterdmorgan.com.familymap.MainActivity.TAG;
 public class MapsFragment extends Fragment implements GoogleMap.OnMarkerClickListener, OnMapReadyCallback {
     public static final String TAG = MapsFragment.class.getSimpleName();
 
-    private Map<Marker, Event> markerEventMap;
-
     private TextView tvEventPerson;
     private TextView tvEventType;
     private TextView tvEventDate;
     private TextView tvEventLocation;
     private SupportMapFragment supportMapFragment;
 
-    private OnFragmentInteractionListener mListener;
+    private ArrayList<Person> mothersSide;
+    private ArrayList<Person> fathersSide;
+    private Map<Marker, Event> markerEventMap;
 
     public MapsFragment() {
         // Required empty public constructor
@@ -70,6 +65,29 @@ public class MapsFragment extends Fragment implements GoogleMap.OnMarkerClickLis
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
         markerEventMap = new HashMap<>();
+
+        Person userPerson = new Person();
+        Person mother = new Person();
+        Person father = new Person();
+
+        for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+            if (person.getPersonID().equals(UserDataStore.getInstance().getUserResult().getPersonID())) {
+                userPerson = person;
+                break;
+            }
+        }
+
+        for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+            if (person.getPersonID().equals(userPerson.getMother())) {
+                mother = person;
+            }
+            if (person.getPersonID().equals(userPerson.getFather())) {
+                father = person;
+            }
+        }
+
+        mothersSide = compileAncestors(mother, new ArrayList<Person>());
+        fathersSide = compileAncestors(father, new ArrayList<Person>());
     }
 
     @Override
@@ -93,6 +111,8 @@ public class MapsFragment extends Fragment implements GoogleMap.OnMarkerClickLis
 
         supportMapFragment.getMapAsync(this);
 
+
+
         return view;
     }
 
@@ -113,7 +133,8 @@ public class MapsFragment extends Fragment implements GoogleMap.OnMarkerClickLis
                 Toast.makeText(getContext(), "Will launch search activity.", Toast.LENGTH_SHORT).show();
                 break;
             case (R.id.menu_main_filter):
-                Toast.makeText(getContext(), "Will launch filter activity.", Toast.LENGTH_SHORT).show();
+                Intent filterIntent = new Intent(getContext(), FilterActivity.class);
+                startActivity(filterIntent);
                 break;
         }
 
@@ -123,18 +144,11 @@ public class MapsFragment extends Fragment implements GoogleMap.OnMarkerClickLis
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        if (context instanceof OnFragmentInteractionListener) {
-            mListener = (OnFragmentInteractionListener) context;
-        } else {
-            throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
-        }
     }
 
     @Override
     public void onDetach() {
         super.onDetach();
-        mListener = null;
     }
 
     @Override
@@ -175,15 +189,91 @@ public class MapsFragment extends Fragment implements GoogleMap.OnMarkerClickLis
 
 
         googleMap.setOnMarkerClickListener(this);
-        Map<String, Float> typeColorMap = Event.getTypeColorMap();
 
         for (Event event : UserDataStore.getInstance().getCurrentEventResult().getData()) {
-            Float color = typeColorMap.get(event.getEventType());
-            LatLng location = new LatLng(event.getLatitude(), event.getLongitude());
-            MarkerOptions markerOptions = new MarkerOptions().position(location).icon(BitmapDescriptorFactory.defaultMarker(color));
-            Marker marker = googleMap.addMarker(markerOptions);
-            markerEventMap.put(marker, event);
+            boolean placeMarker = isMarkerPlaced(event);
+
+            if (placeMarker) {
+                Float color = UserDataStore.getInstance().getMarkerColors().get(event.getEventType().toLowerCase());
+                LatLng location = new LatLng(event.getLatitude(), event.getLongitude());
+                MarkerOptions markerOptions = new MarkerOptions().position(location).icon(BitmapDescriptorFactory.defaultMarker(color));
+                Marker marker = googleMap.addMarker(markerOptions);
+                markerEventMap.put(marker, event);
+            }
         }
+    }
+
+    private boolean isMarkerPlaced(Event event) {
+        boolean placeMarker = false;
+
+        String eventType = event.getEventType().toLowerCase();
+
+
+        if (UserDataStore.getInstance().getFilterPreferences().get(eventType)) {
+            placeMarker = true;
+        }
+        if (isMaleEvent(event) && !UserDataStore.getInstance().isShowMale()) {
+            placeMarker = false;
+        }
+        if (!isMaleEvent(event) && !UserDataStore.getInstance().isShowFemale()) {
+            placeMarker = false;
+        }
+        if (personDoesExist(getPersonFromEvent(event), mothersSide) && !UserDataStore.getInstance().isShowMother()) {
+            placeMarker = false;
+        }
+
+        if (personDoesExist(getPersonFromEvent(event), fathersSide) && !UserDataStore.getInstance().isShowFather()) {
+            placeMarker = false;
+        }
+
+
+        return placeMarker;
+    }
+
+    private ArrayList<Person> compileAncestors(Person descendant, ArrayList<Person> ancestors) {
+        ancestors.add(descendant);
+
+        for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+            if (person.getPersonID().equals(descendant.getFather())
+                    || person.getPersonID().equals(descendant.getMother())) {
+                ancestors = compileAncestors(person, ancestors);
+            }
+        }
+
+        return ancestors;
+    }
+
+    private boolean personDoesExist(Person person, ArrayList<Person> side) {
+        for (Person p : side) {
+            if (p.equals(person)) {
+                return true;
+
+            }
+        }
+
+        return false;
+    }
+
+    private Person getPersonFromEvent(Event event) {
+        for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+            if (person.getPersonID().equals(event.getPersonID())) {
+                return person;
+            }
+        }
+
+        return null;
+    }
+
+    private boolean isMaleEvent(Event event) {
+        for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+            if (person.getPersonID().equals(event.getPersonID()) && person.getGender().equals("m")) {
+                return true;
+            } else if (person.getPersonID().equals(event.getPersonID()) && person.getGender().equals("f")) {
+                return false;
+            }
+        }
+
+        return false;
     }
 
     /**

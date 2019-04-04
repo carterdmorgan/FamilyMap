@@ -59,7 +59,6 @@ public class FilterAdapter extends RecyclerView.Adapter<FilterAdapter.ViewHolder
     }
 
     public FilterAdapter(ArrayList<String> eventTypes) {
-        Log.d(TAG, "FilterAdapter: eventTypes: " + eventTypes.toString());
         this.eventTypes = eventTypes;
     }
 

@@ -6,4 +6,5 @@
     <dimen name="spinner_title_spacing">10dp</dimen>
     <dimen name="switch_right_spacing">5dp</dimen>
     <dimen name="category_icon_spacing">5dp</dimen>
+    <dimen name="person_recycler_view_margin">5dp</dimen>
 </resources>

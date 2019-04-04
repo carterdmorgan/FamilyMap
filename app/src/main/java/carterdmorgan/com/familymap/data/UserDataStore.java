@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 import carterdmorgan.com.familymap.api.model.Event;
+import carterdmorgan.com.familymap.api.model.Person;
 import carterdmorgan.com.familymap.api.network.FamilyMapService;
 import carterdmorgan.com.familymap.api.result.CurrentEventResult;
 import carterdmorgan.com.familymap.api.result.CurrentPersonResult;
@@ -49,6 +50,16 @@ public class UserDataStore {
 
     public void retrieveFamilyData(final FamilyMapService fmService, LoadFamilyDataListener listener) {
         getAllPersons(fmService, listener);
+    }
+
+    public Person getUserPerson() {
+        for (Person person : currentPersonResult.getData()) {
+            if (person.getPersonID().equals(userResult.getPersonID())) {
+                return person;
+            }
+        }
+
+        return null;
     }
 
     public void initializeUserPreferences() {

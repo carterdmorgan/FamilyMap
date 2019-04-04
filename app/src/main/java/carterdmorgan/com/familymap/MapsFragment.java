@@ -19,11 +19,15 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.maps.CameraUpdate;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
@@ -59,6 +63,9 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
     private LinearLayout llEventInfo;
     private SupportMapFragment supportMapFragment;
     private Person currentPerson;
+    private Event zoomEvent;
+
+    public static final String ARG_ZOOM_EVENT = "zoom_event";
 
     private ArrayList<Person> mothersSide;
     private ArrayList<Person> fathersSide;
@@ -67,15 +74,28 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
 
     public MapsFragment() { }
 
+    public static MapsFragment newInstance(Event event) {
+        MapsFragment fragment = new MapsFragment();
+        Bundle args = new Bundle();
+        args.putParcelable(ARG_ZOOM_EVENT, event);
+        fragment.setArguments(args);
+        return fragment;
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
         markerEventMap = new HashMap<>();
 
+        if (this.getArguments() != null)
+            zoomEvent = (Event) this.getArguments().get(ARG_ZOOM_EVENT);
+
         Person userPerson = new Person();
         Person mother = new Person();
         Person father = new Person();
+
+        Log.d(TAG, "onCreate: current person result: " + UserDataStore.getInstance().toString());
 
         for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
             if (person.getPersonID().equals(UserDataStore.getInstance().getUserResult().getPersonID())) {
@@ -207,6 +227,106 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
 
         if (UserDataStore.getInstance().isShowLifeStoryLines())
             drawLifeStoryLines(googleMap);
+
+        if (zoomEvent != null) {
+            Event event = zoomEvent;
+
+            Person person = null;
+            Person spouse = null;
+
+            for (Person p : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+                if (p.getPersonID().equals(event.getPersonID())) {
+                    tvEventPerson.setText(p.getFirstName() + " " + p.getLastName());
+                    currentPerson = p;
+                    person = p;
+                }
+            }
+
+            tvEventType.setText(event.getEventType());
+            tvEventLocation.setText(event.getCity() + ", " + event.getCountry());
+            tvEventDate.setText(Integer.toString(event.getYear()));
+
+            if (currentPerson.getGender().equals("f")) {
+                ivGenderIcon.setImageDrawable(getContext().getDrawable(R.drawable.ic_person_pink_100_24dp));
+            } else {
+                ivGenderIcon.setImageDrawable(getContext().getDrawable(R.drawable.ic_person_blue_400_24dp));
+            }
+
+            if (UserDataStore.getInstance().isShowSpouseLines()) {
+                Log.d(TAG, "onMarkerClick: showing lines");
+                int color = 0;
+                if (UserDataStore.getInstance().getSpouseLineColor().equals(RelationshipLines.RED)) {
+                    color = Color.RED;
+                } else if (UserDataStore.getInstance().getSpouseLineColor().equals(RelationshipLines.BLUE)) {
+                    color = Color.BLUE;
+                } else if (UserDataStore.getInstance().getSpouseLineColor().equals(RelationshipLines.GREEN)) {
+                    color = Color.GREEN;
+                }
+
+                Log.d(TAG, "onMarkerClick: person: " + person.toString());
+                if (person != null && person.getSpouse() != null) {
+                    Log.d(TAG, "onMarkerClick: second layer");
+                    for (Person p : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+                        if (person.getSpouse() != null && p.getPersonID().equals(person.getSpouse())) {
+                            spouse = p;
+                            break;
+                        }
+                    }
+
+                    if (spouse != null) {
+                        ArrayList<Event> spouseEvents = new ArrayList<>();
+                        ArrayList<Event> allEvents = new ArrayList<>();
+
+                        for (Marker m : markers) {
+                            allEvents.add(markerEventMap.get(m));
+                        }
+
+                        for (Event e : allEvents) {
+                            if (e.getPersonID().equals(spouse.getPersonID())) {
+                                spouseEvents.add(e);
+                            }
+                        }
+
+                        Event earliestEvent = spouseEvents.get(0);
+
+                        for (Event e : spouseEvents) {
+                            if (e.getYear() < earliestEvent.getYear()) {
+                                earliestEvent = e;
+                            }
+                        }
+
+
+                        Polyline line = googleMap.addPolyline(new PolylineOptions()
+                                .add(new LatLng(event.getLatitude(), event.getLongitude()),
+                                        new LatLng(earliestEvent.getLatitude(), earliestEvent.getLongitude()))
+                                .width(15)
+                                .color(color));
+                    }
+                }
+
+            }
+
+            if (UserDataStore.getInstance().isShowFamilyTreeLines()) {
+                if (person != null) {
+                    int color = 0;
+                    if (UserDataStore.getInstance().getFamilyTreeLineColor().equals(RelationshipLines.RED)) {
+                        color = Color.RED;
+                    } else if (UserDataStore.getInstance().getFamilyTreeLineColor().equals(RelationshipLines.BLUE)) {
+                        color = Color.BLUE;
+                    } else if (UserDataStore.getInstance().getFamilyTreeLineColor().equals(RelationshipLines.GREEN)) {
+                        color = Color.GREEN;
+                    }
+
+                    recursivelyDrawFamilyTreeLines(googleMap, person, event, 15.0f, color);
+                }
+            }
+
+            CameraPosition cameraPosition = new CameraPosition.Builder()
+                    .target(new LatLng(zoomEvent.getLatitude(), zoomEvent.getLongitude()))
+                    .zoom(3)
+                    .build();
+            googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+        }
     }
 
     private GoogleMap.OnMarkerClickListener getMarkerClickListener(final GoogleMap googleMap) {
@@ -220,8 +340,8 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
                 for (Person p : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
                     if (p.getPersonID().equals(event.getPersonID())) {
                         tvEventPerson.setText(p.getFirstName() + " " + p.getLastName());
-                        person = p;
                         currentPerson = p;
+                        person = p;
                     }
                 }
 
@@ -229,7 +349,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
                 tvEventLocation.setText(event.getCity() + ", " + event.getCountry());
                 tvEventDate.setText(Integer.toString(event.getYear()));
 
-                if (person.getGender().equals("f")) {
+                if (currentPerson.getGender().equals("f")) {
                     ivGenderIcon.setImageDrawable(getContext().getDrawable(R.drawable.ic_person_pink_100_24dp));
                 } else {
                     ivGenderIcon.setImageDrawable(getContext().getDrawable(R.drawable.ic_person_blue_400_24dp));
@@ -282,7 +402,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
                             Polyline line = googleMap.addPolyline(new PolylineOptions()
                                     .add(new LatLng(event.getLatitude(), event.getLongitude()),
                                             new LatLng(earliestEvent.getLatitude(), earliestEvent.getLongitude()))
-                                    .width(18)
+                                    .width(15)
                                     .color(color));
                         }
                     }
@@ -290,6 +410,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
                 }
 
                 if (UserDataStore.getInstance().isShowFamilyTreeLines()) {
+                    Log.d(TAG, "onMarkerClick: show family lines triggered");
                     if (person != null) {
                         int color = 0;
                         if (UserDataStore.getInstance().getFamilyTreeLineColor().equals(RelationshipLines.RED)) {
@@ -300,7 +421,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
                             color = Color.GREEN;
                         }
 
-                        recursivelyDrawFamilyTreeLines(googleMap, person, event, 18.0f, color);
+                        recursivelyDrawFamilyTreeLines(googleMap, person, event, 15.0f, color);
                     }
                 }
 
@@ -310,8 +431,6 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
     }
 
     private void drawLifeStoryLines(GoogleMap googleMap) {
-        Log.d(TAG, "drawLifeStoryLines: begins");
-
         int color = 0;
         if (UserDataStore.getInstance().getLifeStoryLineColor().equals(RelationshipLines.RED)) {
             color = Color.RED;
@@ -361,6 +480,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
             });
 
             for (int i = 0; i < events.size() - 1; i++) {
+                Log.d(TAG, "drawLifeStoryLines: drawing line");
                 Event event0 = events.get(i);
                 Event event1 = events.get(i+1);
                 Polyline line = googleMap.addPolyline(new PolylineOptions()
@@ -373,11 +493,15 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
     }
 
     private void recursivelyDrawFamilyTreeLines(GoogleMap googleMap, Person person, Event event, float width, int color) {
+        Log.d(TAG, "recursivelyDrawFamilyTreeLines: begins");
         Person mother = null;
         Person father = null;
 
+        Log.d(TAG, "recursivelyDrawFamilyTreeLines: person: " + person.toString());
+
         for (Person p : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
             if (p.getPersonID().equals(person.getMother())) {
+                Log.d(TAG, "recursivelyDrawFamilyTreeLines: found mother");
                 mother = p;
                 break;
             }
@@ -385,6 +509,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
 
         for (Person p : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
             if (p.getPersonID().equals(person.getFather())) {
+                Log.d(TAG, "recursivelyDrawFamilyTreeLines: found father");
                 father = p;
                 break;
             }
@@ -394,7 +519,9 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
             ArrayList<Event> events = new ArrayList<>();
 
             for (Event e : UserDataStore.getInstance().getCurrentEventResult().getData()) {
+                Log.d(TAG, "recursivelyDrawFamilyTreeLines: first loop");
                 if (e.getPersonID().equals(mother.getPersonID())) {
+                    Log.d(TAG, "recursivelyDrawFamilyTreeLines: add mom event");
                     events.add(e);
                 }
             }
@@ -422,7 +549,9 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
             ArrayList<Event> events = new ArrayList<>();
 
             for (Event e : UserDataStore.getInstance().getCurrentEventResult().getData()) {
+                Log.d(TAG, "recursivelyDrawFamilyTreeLines: second loop");
                 if (e.getPersonID().equals(father.getPersonID())) {
+                    Log.d(TAG, "recursivelyDrawFamilyTreeLines: add dad events");
                     events.add(e);
                 }
             }

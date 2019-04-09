@@ -47,7 +47,7 @@ public class PersonActivity extends AppCompatActivity {
 
         ArrayList<LifeEventsContainer> lifeEventsContainers = new ArrayList<>();
 
-        for (Event event : UserDataStore.getInstance().getCurrentEventResult().getData()) {
+        for (Event event : UserDataStore.getInstance().getFilteredEvents()) {
             if (event.getPersonID().equals(displayPerson.getPersonID())) {
                 lifeEventsContainers.add(new LifeEventsContainer(event, displayPerson.getFirstName() + " " + displayPerson.getLastName()));
             }
@@ -68,11 +68,21 @@ public class PersonActivity extends AppCompatActivity {
             }
         });
 
+//        for (LifeEventsContainer container : lifeEventsContainers) {
+//            if (container.getEvent().getEventType().toLowerCase().equals("birth")) {
+//                lifeEventsContainers.remove(container);
+//                lifeEventsContainers.add(0, container);
+//            } else if (container.getEvent().getEventType().toLowerCase().equals("death")) {
+//                lifeEventsContainers.remove(container);
+//                lifeEventsContainers.add(lifeEventsContainers.size() - 1, container);
+//            }
+//        }
+
         ArrayList<FamilyContainer> familyContainers = new ArrayList<>();
         ArrayList<Person> children = new ArrayList<>();
         ArrayList<Person> momsSide = new ArrayList<>();
         ArrayList<Person> dadsSide = new ArrayList<>();
-        ArrayList<Person> descendants = new ArrayList<>();
+//        ArrayList<Person> descendants = new ArrayList<>();
 
         for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
             if (person.getPersonID().equals(displayPerson.getSpouse())) {
@@ -102,14 +112,14 @@ public class PersonActivity extends AppCompatActivity {
             familyContainers.add(container);
         }
 
-        for (Person person : children) {
-            descendants.addAll(compileDescendants(person, new ArrayList<Person>()));
-        }
+//        for (Person person : children) {
+//            descendants.addAll(compileDescendants(person, new ArrayList<Person>()));
+//        }
 
-        for (Person person : descendants) {
-            FamilyContainer container = new FamilyContainer(person, "Descendant");
-            familyContainers.add(container);
-        }
+//        for (Person person : descendants) {
+//            FamilyContainer container = new FamilyContainer(person, "Descendant");
+//            familyContainers.add(container);
+//        }
 
         rvLifeEvents = findViewById(R.id.life_events_recycler_view);
         rvFamily = findViewById(R.id.family_recycler_view);
@@ -151,17 +161,17 @@ public class PersonActivity extends AppCompatActivity {
         rvFamily.setAdapter(familyAdapter);
     }
 
-    private ArrayList<Person> compileDescendants(Person ancestor, ArrayList<Person> descendants) {
-        for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
-            if ((person.getFather() != null &&person.getFather().equals(ancestor.getPersonID()))
-                    || (person.getMother() != null && person.getMother().equals(ancestor.getPersonID()))) {
-                descendants.add(person);
-                descendants = compileDescendants(person, descendants);
-            }
-        }
-
-        return descendants;
-    }
+//    private ArrayList<Person> compileDescendants(Person ancestor, ArrayList<Person> descendants) {
+//        for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+//            if ((person.getFather() != null &&person.getFather().equals(ancestor.getPersonID()))
+//                    || (person.getMother() != null && person.getMother().equals(ancestor.getPersonID()))) {
+//                descendants.add(person);
+//                descendants = compileDescendants(person, descendants);
+//            }
+//        }
+//
+//        return descendants;
+//    }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -169,6 +179,7 @@ public class PersonActivity extends AppCompatActivity {
             case (android.R.id.home):
                 Intent intent = new Intent(PersonActivity.this, MainActivity.class);
                 intent.putExtra("launchMaps", true);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 startActivity(intent);
                 return true;
             default:
@@ -248,6 +259,14 @@ public class PersonActivity extends AppCompatActivity {
         public void setPersonName(String personName) {
             this.personName = personName;
         }
+
+        @Override
+        public String toString() {
+            return "LifeEventsContainer{" +
+                    "event=" + event +
+                    ", personName='" + personName + '\'' +
+                    '}';
+        }
     }
 
     public static class FamilyContainer {
@@ -273,6 +292,14 @@ public class PersonActivity extends AppCompatActivity {
 
         public void setRelationship(String relationship) {
             this.relationship = relationship;
+        }
+
+        @Override
+        public String toString() {
+            return "FamilyContainer{" +
+                    "person=" + person +
+                    ", relationship='" + relationship + '\'' +
+                    '}';
         }
     }
 }

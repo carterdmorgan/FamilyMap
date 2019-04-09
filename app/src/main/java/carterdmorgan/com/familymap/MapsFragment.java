@@ -67,8 +67,8 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
 
     public static final String ARG_ZOOM_EVENT = "zoom_event";
 
-    private ArrayList<Person> mothersSide;
-    private ArrayList<Person> fathersSide;
+//    private ArrayList<Person> mothersSide;
+//    private ArrayList<Person> fathersSide;
     private Map<Marker, Event> markerEventMap;
     private ArrayList<Marker> markers = new ArrayList<>();
 
@@ -113,8 +113,8 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
             }
         }
 
-        mothersSide = compileAncestors(mother, new ArrayList<Person>());
-        fathersSide = compileAncestors(father, new ArrayList<Person>());
+//        mothersSide = compileAncestors(mother, new ArrayList<Person>());
+//        fathersSide = compileAncestors(father, new ArrayList<Person>());
     }
 
     @Override
@@ -156,8 +156,10 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.menu_main, menu);
-        super.onCreateOptionsMenu(menu, inflater);
+        if (zoomEvent == null) {
+            inflater.inflate(R.menu.menu_main, menu);
+            super.onCreateOptionsMenu(menu, inflater);
+        }
     }
 
     @Override
@@ -168,7 +170,8 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
                 startActivity(intent);
                 break;
             case (R.id.menu_main_search):
-                Toast.makeText(getContext(), "Will launch search activity.", Toast.LENGTH_SHORT).show();
+                Intent searchIntent = new Intent(getContext(), SearchActivity.class);
+                startActivity(searchIntent);
                 break;
             case (R.id.menu_main_filter):
                 Intent filterIntent = new Intent(getContext(), FilterActivity.class);
@@ -212,17 +215,17 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
 
         googleMap.setOnMarkerClickListener(getMarkerClickListener(googleMap));
 
-        for (Event event : UserDataStore.getInstance().getCurrentEventResult().getData()) {
-            boolean placeMarker = isMarkerPlaced(event);
+        for (Event event : UserDataStore.getInstance().getFilteredEvents()) {
+//            boolean placeMarker = isMarkerPlaced(event);
 
-            if (placeMarker) {
+//            if (placeMarker) {
                 Float color = UserDataStore.getInstance().getMarkerColors().get(event.getEventType().toLowerCase());
                 LatLng location = new LatLng(event.getLatitude(), event.getLongitude());
                 MarkerOptions markerOptions = new MarkerOptions().position(location).icon(BitmapDescriptorFactory.defaultMarker(color));
                 Marker marker = googleMap.addMarker(markerOptions);
                 markers.add(marker);
                 markerEventMap.put(marker, event);
-            }
+//            }
         }
 
         if (UserDataStore.getInstance().isShowLifeStoryLines())
@@ -576,76 +579,76 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
         }
     }
 
-    private boolean isMarkerPlaced(Event event) {
-        boolean placeMarker = false;
+//    private boolean isMarkerPlaced(Event event) {
+//        boolean placeMarker = false;
+//
+//        String eventType = event.getEventType().toLowerCase();
+//
+//
+//        if (UserDataStore.getInstance().getFilterPreferences().get(eventType)) {
+//            placeMarker = true;
+//        }
+//        if (isMaleEvent(event) && !UserDataStore.getInstance().isShowMale()) {
+//            placeMarker = false;
+//        }
+//        if (!isMaleEvent(event) && !UserDataStore.getInstance().isShowFemale()) {
+//            placeMarker = false;
+//        }
+//        if (personDoesExist(getPersonFromEvent(event), mothersSide) && !UserDataStore.getInstance().isShowMother()) {
+//            placeMarker = false;
+//        }
+//
+//        if (personDoesExist(getPersonFromEvent(event), fathersSide) && !UserDataStore.getInstance().isShowFather()) {
+//            placeMarker = false;
+//        }
+//
+//
+//        return placeMarker;
+//    }
 
-        String eventType = event.getEventType().toLowerCase();
+//    private ArrayList<Person> compileAncestors(Person descendant, ArrayList<Person> ancestors) {
+//        ancestors.add(descendant);
+//
+//        for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+//            if (person.getPersonID().equals(descendant.getFather())
+//                    || person.getPersonID().equals(descendant.getMother())) {
+//                ancestors = compileAncestors(person, ancestors);
+//            }
+//        }
+//
+//        return ancestors;
+//    }
 
-
-        if (UserDataStore.getInstance().getFilterPreferences().get(eventType)) {
-            placeMarker = true;
-        }
-        if (isMaleEvent(event) && !UserDataStore.getInstance().isShowMale()) {
-            placeMarker = false;
-        }
-        if (!isMaleEvent(event) && !UserDataStore.getInstance().isShowFemale()) {
-            placeMarker = false;
-        }
-        if (personDoesExist(getPersonFromEvent(event), mothersSide) && !UserDataStore.getInstance().isShowMother()) {
-            placeMarker = false;
-        }
-
-        if (personDoesExist(getPersonFromEvent(event), fathersSide) && !UserDataStore.getInstance().isShowFather()) {
-            placeMarker = false;
-        }
-
-
-        return placeMarker;
-    }
-
-    private ArrayList<Person> compileAncestors(Person descendant, ArrayList<Person> ancestors) {
-        ancestors.add(descendant);
-
-        for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
-            if (person.getPersonID().equals(descendant.getFather())
-                    || person.getPersonID().equals(descendant.getMother())) {
-                ancestors = compileAncestors(person, ancestors);
-            }
-        }
-
-        return ancestors;
-    }
-
-    private boolean personDoesExist(Person person, ArrayList<Person> side) {
-        for (Person p : side) {
-            if (p.equals(person)) {
-                return true;
-
-            }
-        }
-
-        return false;
-    }
-
-    private Person getPersonFromEvent(Event event) {
-        for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
-            if (person.getPersonID().equals(event.getPersonID())) {
-                return person;
-            }
-        }
-
-        return null;
-    }
-
-    private boolean isMaleEvent(Event event) {
-        for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
-            if (person.getPersonID().equals(event.getPersonID()) && person.getGender().equals("m")) {
-                return true;
-            } else if (person.getPersonID().equals(event.getPersonID()) && person.getGender().equals("f")) {
-                return false;
-            }
-        }
-
-        return false;
-    }
+//    private boolean personDoesExist(Person person, ArrayList<Person> side) {
+//        for (Person p : side) {
+//            if (p.equals(person)) {
+//                return true;
+//
+//            }
+//        }
+//
+//        return false;
+//    }
+//
+//    private Person getPersonFromEvent(Event event) {
+//        for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+//            if (person.getPersonID().equals(event.getPersonID())) {
+//                return person;
+//            }
+//        }
+//
+//        return null;
+//    }
+//
+//    private boolean isMaleEvent(Event event) {
+//        for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+//            if (person.getPersonID().equals(event.getPersonID()) && person.getGender().equals("m")) {
+//                return true;
+//            } else if (person.getPersonID().equals(event.getPersonID()) && person.getGender().equals("f")) {
+//                return false;
+//            }
+//        }
+//
+//        return false;
+//    }
 }

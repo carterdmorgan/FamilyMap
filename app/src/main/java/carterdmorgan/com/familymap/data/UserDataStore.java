@@ -1,5 +1,7 @@
 package carterdmorgan.com.familymap.data;
 
+import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -120,6 +122,25 @@ public class UserDataStore {
         instance.setUserResult(null);
         instance.setCurrentEventResult(null);
         instance.setCurrentPersonResult(null);
+
+        serverHost = null;
+        serverPort = null;
+        mapType = 0;
+        filterPreferences = new HashMap<>();
+        markerColors = new HashMap<>();
+
+        showFather = true;
+        showMother = true;
+        showMale = true;
+        showFemale = true;
+
+        lifeStoryLineColor = "Red";
+        familyTreeLineColor = "Green";
+        spouseLineColor = "Blue";
+
+        showLifeStoryLines = false;
+        showFamilyTreeLines = false;
+        showSpouseLines = false;
     }
 
     public ArrayList<String> getEventTypes() {
@@ -140,6 +161,112 @@ public class UserDataStore {
         });
 
         return listTypes;
+    }
+
+    public ArrayList<Event> getFilteredEvents() {
+        ArrayList<Event> events = new ArrayList<>();
+
+        Person mother = null;
+        Person father = null;
+        Person person = getUserPerson();
+
+        for (Person p : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+            if (p.getPersonID().equals(person.getMother())) {
+                mother = p;
+                break;
+            }
+        }
+
+        for (Person p : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+            if (p.getPersonID().equals(person.getFather())) {
+                father = p;
+                break;
+            }
+        }
+
+        ArrayList<Person> mothersSide = compileAncestors(mother, new ArrayList<Person>());
+        ArrayList<Person> fathersSide = compileAncestors(father, new ArrayList<Person>());
+
+        for (Event event : currentEventResult.getData()) {
+            if (shouldIncludeEvent(event, mothersSide, fathersSide)) {
+                events.add(event);
+            }
+        }
+
+        return events;
+    }
+
+    private boolean shouldIncludeEvent(Event event, ArrayList<Person> mothersSide, ArrayList<Person> fathersSide) {
+        boolean placeMarker = false;
+
+        String eventType = event.getEventType().toLowerCase();
+
+
+        if (UserDataStore.getInstance().getFilterPreferences().get(eventType)) {
+            placeMarker = true;
+        }
+        if (isMaleEvent(event) && !UserDataStore.getInstance().isShowMale()) {
+            placeMarker = false;
+        }
+        if (!isMaleEvent(event) && !UserDataStore.getInstance().isShowFemale()) {
+            placeMarker = false;
+        }
+        if (personDoesExist(getPersonFromEvent(event), mothersSide) && !UserDataStore.getInstance().isShowMother()) {
+            placeMarker = false;
+        }
+
+        if (personDoesExist(getPersonFromEvent(event), fathersSide) && !UserDataStore.getInstance().isShowFather()) {
+            placeMarker = false;
+        }
+
+
+        return placeMarker;
+    }
+
+    private ArrayList<Person> compileAncestors(Person descendant, ArrayList<Person> ancestors) {
+        ancestors.add(descendant);
+
+        for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+            if (person.getPersonID().equals(descendant.getFather())
+                    || person.getPersonID().equals(descendant.getMother())) {
+                ancestors = compileAncestors(person, ancestors);
+            }
+        }
+
+        return ancestors;
+    }
+
+    private boolean isMaleEvent(Event event) {
+        for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+            if (person.getPersonID().equals(event.getPersonID()) && person.getGender().equals("m")) {
+                return true;
+            } else if (person.getPersonID().equals(event.getPersonID()) && person.getGender().equals("f")) {
+                return false;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean personDoesExist(Person person, ArrayList<Person> side) {
+        for (Person p : side) {
+            if (p.equals(person)) {
+                return true;
+
+            }
+        }
+
+        return false;
+    }
+
+    private Person getPersonFromEvent(Event event) {
+        for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+            if (person.getPersonID().equals(event.getPersonID())) {
+                return person;
+            }
+        }
+
+        return null;
     }
 
     public Map<String, Boolean> getFilterPreferences() {

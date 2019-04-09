@@ -32,16 +32,20 @@
                 android:textSize="@dimen/settings_subtitle_size"
                 android:text="SHOW LIFE STORY LINES"/>
         </LinearLayout>
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"/>
         <Spinner
             android:id="@+id/life_story_line_spinner"
             android:layout_width="wrap_content"
+            android:gravity="right"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
             android:layout_marginLeft="@dimen/spinner_title_spacing">
         </Spinner>
         <Switch
             android:id="@+id/life_story_switch"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginRight="@dimen/switch_right_spacing"
             android:gravity="right"/>
@@ -71,6 +75,10 @@
                 android:textSize="@dimen/settings_subtitle_size"
                 android:text="SHOW TREE LINES"/>
         </LinearLayout>
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"/>
         <Spinner
             android:id="@+id/family_tree_line_spinner"
             android:layout_width="wrap_content"
@@ -80,7 +88,7 @@
         </Spinner>
         <Switch
             android:id="@+id/family_tree_switch"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginRight="@dimen/switch_right_spacing"
             android:gravity="right"/>
@@ -110,6 +118,10 @@
                 android:textSize="@dimen/settings_subtitle_size"
                 android:text="SHOW SPOUSE LINES"/>
         </LinearLayout>
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"/>
         <Spinner
             android:id="@+id/spouse_line_spinner"
             android:layout_width="wrap_content"
@@ -119,7 +131,7 @@
         </Spinner>
         <Switch
             android:id="@+id/spouse_switch"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginRight="@dimen/switch_right_spacing"
             android:gravity="right"/>

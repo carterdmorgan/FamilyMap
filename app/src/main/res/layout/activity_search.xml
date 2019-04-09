@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:layout_margin="10dp"
+    tools:context=".SearchActivity">
+
+    <android.support.v7.widget.SearchView
+        android:id="@+id/search_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:iconifiedByDefault="false"
+        android:queryHint="Enter a person or event"
+        app:iconifiedByDefault="false"
+        android:layout_marginBottom="10dp"
+        app:queryHint="Enter a person or event" />
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/person_search_recycler_view"
+        android:scrollbars="none"
+        android:nestedScrollingEnabled="false"
+        android:layout_marginEnd="@dimen/person_recycler_view_margin"
+        android:layout_marginStart="@dimen/person_recycler_view_margin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/event_search_recycler_view"
+        android:scrollbars="none"
+        android:nestedScrollingEnabled="false"
+        android:layout_marginEnd="@dimen/person_recycler_view_margin"
+        android:layout_marginStart="@dimen/person_recycler_view_margin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+</LinearLayout>

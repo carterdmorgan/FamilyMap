@@ -15,21 +15,13 @@ public class MainActivity extends AppCompatActivity implements LoginFragment.OnF
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        if (savedInstanceState == null && getIntent().getExtras() != null) {
-            if (getIntent().getExtras().getBoolean("launchMaps")) {
-                // Begin the transaction
-                FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-                // Replace the contents of the container with the new fragment
-                ft.replace(R.id.fragment_placeholder_main, new MapsFragment());
-                ft.addToBackStack("maps");
-                ft.commit();
-            } else {
-                // Begin the transaction
-                FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-                // Replace the contents of the container with the new fragment
-                ft.replace(R.id.fragment_placeholder_main, new LoginFragment());
-                ft.commit();
-            }
+        if (UserDataStore.getInstance().getUserResult() != null) {
+            // Begin the transaction
+            FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+            // Replace the contents of the container with the new fragment
+            ft.replace(R.id.fragment_placeholder_main, new MapsFragment());
+            ft.addToBackStack("maps");
+            ft.commit();
         } else {
             // Begin the transaction
             FragmentTransaction ft = getSupportFragmentManager().beginTransaction();

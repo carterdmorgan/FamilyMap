@@ -17,6 +17,7 @@ import java.util.Comparator;
 
 import carterdmorgan.com.familymap.api.model.Event;
 import carterdmorgan.com.familymap.api.model.Person;
+import carterdmorgan.com.familymap.data.Constants;
 import carterdmorgan.com.familymap.data.FamilyAdapter;
 import carterdmorgan.com.familymap.data.LifeEventsAdapter;
 import carterdmorgan.com.familymap.data.UserDataStore;
@@ -40,7 +41,7 @@ public class PersonActivity extends AppCompatActivity {
         setContentView(R.layout.activity_person);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        displayPerson = (Person) getIntent().getExtras().get("person");
+        displayPerson = (Person) getIntent().getExtras().get(Constants.PERSON_EXTRA);
 
         initializeTextViews();
         initializeLinearLayouts();

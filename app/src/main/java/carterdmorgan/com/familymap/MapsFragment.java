@@ -64,6 +64,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
     private SupportMapFragment supportMapFragment;
     private Person currentPerson;
     private Event zoomEvent;
+    private ArrayList<Polyline> currentLines;
 
     public static final String ARG_ZOOM_EVENT = "zoom_event";
 
@@ -87,31 +88,30 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
         markerEventMap = new HashMap<>();
+        currentLines = new ArrayList<>();
 
         if (this.getArguments() != null)
             zoomEvent = (Event) this.getArguments().get(ARG_ZOOM_EVENT);
 
-        Person userPerson = new Person();
-        Person mother = new Person();
-        Person father = new Person();
+//        Person userPerson = new Person();
+//        Person mother = new Person();
+//        Person father = new Person();
 
-        Log.d(TAG, "onCreate: current person result: " + UserDataStore.getInstance().toString());
+//        for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+//            if (person.getPersonID().equals(UserDataStore.getInstance().getUserResult().getPersonID())) {
+//                userPerson = person;
+//                break;
+//            }
+//        }
 
-        for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
-            if (person.getPersonID().equals(UserDataStore.getInstance().getUserResult().getPersonID())) {
-                userPerson = person;
-                break;
-            }
-        }
-
-        for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
-            if (person.getPersonID().equals(userPerson.getMother())) {
-                mother = person;
-            }
-            if (person.getPersonID().equals(userPerson.getFather())) {
-                father = person;
-            }
-        }
+//        for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+//            if (person.getPersonID().equals(userPerson.getMother())) {
+//                mother = person;
+//            }
+//            if (person.getPersonID().equals(userPerson.getFather())) {
+//                father = person;
+//            }
+//        }
 
 //        mothersSide = compileAncestors(mother, new ArrayList<Person>());
 //        fathersSide = compileAncestors(father, new ArrayList<Person>());
@@ -256,7 +256,6 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
             }
 
             if (UserDataStore.getInstance().isShowSpouseLines()) {
-                Log.d(TAG, "onMarkerClick: showing lines");
                 int color = 0;
                 if (UserDataStore.getInstance().getSpouseLineColor().equals(RelationshipLines.RED)) {
                     color = Color.RED;
@@ -266,9 +265,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
                     color = Color.GREEN;
                 }
 
-                Log.d(TAG, "onMarkerClick: person: " + person.toString());
                 if (person != null && person.getSpouse() != null) {
-                    Log.d(TAG, "onMarkerClick: second layer");
                     for (Person p : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
                         if (person.getSpouse() != null && p.getPersonID().equals(person.getSpouse())) {
                             spouse = p;
@@ -304,6 +301,8 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
                                         new LatLng(earliestEvent.getLatitude(), earliestEvent.getLongitude()))
                                 .width(15)
                                 .color(color));
+
+                        currentLines.add(line);
                     }
                 }
 
@@ -359,7 +358,8 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
                 }
 
                 if (UserDataStore.getInstance().isShowSpouseLines()) {
-                    Log.d(TAG, "onMarkerClick: showing lines");
+                    clearCurrentLines();
+
                     int color = 0;
                     if (UserDataStore.getInstance().getSpouseLineColor().equals(RelationshipLines.RED)) {
                         color = Color.RED;
@@ -369,9 +369,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
                         color = Color.GREEN;
                     }
 
-                    Log.d(TAG, "onMarkerClick: person: " + person.toString());
                     if (person != null && person.getSpouse() != null) {
-                        Log.d(TAG, "onMarkerClick: second layer");
                         for (Person p : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
                             if (person.getSpouse() != null && p.getPersonID().equals(person.getSpouse())) {
                                 spouse = p;
@@ -407,13 +405,15 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
                                             new LatLng(earliestEvent.getLatitude(), earliestEvent.getLongitude()))
                                     .width(15)
                                     .color(color));
+                            currentLines.add(line);
                         }
                     }
 
                 }
 
                 if (UserDataStore.getInstance().isShowFamilyTreeLines()) {
-                    Log.d(TAG, "onMarkerClick: show family lines triggered");
+                    clearCurrentLines();
+
                     if (person != null) {
                         int color = 0;
                         if (UserDataStore.getInstance().getFamilyTreeLineColor().equals(RelationshipLines.RED)) {
@@ -434,6 +434,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
     }
 
     private void drawLifeStoryLines(GoogleMap googleMap) {
+
         int color = 0;
         if (UserDataStore.getInstance().getLifeStoryLineColor().equals(RelationshipLines.RED)) {
             color = Color.RED;
@@ -476,9 +477,15 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
             Collections.sort(events, new Comparator<Event>() {
                 @Override
                 public int compare(Event o1, Event o2) {
-                    Integer year1 = new Integer(o1.getYear());
-                    Integer year2 = new Integer(o2.getYear());
-                    return year1.compareTo(year2);
+                    Integer i1 = new Integer(o1.getYear());
+                    Integer i2 = new Integer(o2.getYear());
+
+                    if (!i2.equals(i1)) {
+                        return i1.compareTo(i2);
+                    } else {
+                        return o1.getEventType().toLowerCase()
+                                .compareTo(o2.getEventType().toLowerCase());
+                    }
                 }
             });
 
@@ -491,28 +498,26 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
                                 new LatLng(event1.getLatitude(), event1.getLongitude()))
                         .width(18)
                         .color(color));
+                currentLines.add(line);
             }
         }
     }
 
     private void recursivelyDrawFamilyTreeLines(GoogleMap googleMap, Person person, Event event, float width, int color) {
-        Log.d(TAG, "recursivelyDrawFamilyTreeLines: begins");
         Person mother = null;
         Person father = null;
 
-        Log.d(TAG, "recursivelyDrawFamilyTreeLines: person: " + person.toString());
-
+        // TODO: Make helper class for this
         for (Person p : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
             if (p.getPersonID().equals(person.getMother())) {
-                Log.d(TAG, "recursivelyDrawFamilyTreeLines: found mother");
                 mother = p;
                 break;
             }
         }
 
+        // TODO: Make helper class for this
         for (Person p : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
             if (p.getPersonID().equals(person.getFather())) {
-                Log.d(TAG, "recursivelyDrawFamilyTreeLines: found father");
                 father = p;
                 break;
             }
@@ -521,10 +526,8 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
         if (mother != null) {
             ArrayList<Event> events = new ArrayList<>();
 
-            for (Event e : UserDataStore.getInstance().getCurrentEventResult().getData()) {
-                Log.d(TAG, "recursivelyDrawFamilyTreeLines: first loop");
+            for (Event e : UserDataStore.getInstance().getFilteredEvents()) {
                 if (e.getPersonID().equals(mother.getPersonID())) {
-                    Log.d(TAG, "recursivelyDrawFamilyTreeLines: add mom event");
                     events.add(e);
                 }
             }
@@ -543,7 +546,9 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
                     .width(width)
                     .color(color));
 
-            width -= 3.0f;
+            currentLines.add(line);
+
+            width -= 1.5f;
 
             recursivelyDrawFamilyTreeLines(googleMap, mother, earliestEvent, width, color);
         }
@@ -551,10 +556,8 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
         if (father != null) {
             ArrayList<Event> events = new ArrayList<>();
 
-            for (Event e : UserDataStore.getInstance().getCurrentEventResult().getData()) {
-                Log.d(TAG, "recursivelyDrawFamilyTreeLines: second loop");
+            for (Event e : UserDataStore.getInstance().getFilteredEvents()) {
                 if (e.getPersonID().equals(father.getPersonID())) {
-                    Log.d(TAG, "recursivelyDrawFamilyTreeLines: add dad events");
                     events.add(e);
                 }
             }
@@ -573,10 +576,20 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
                     .width(width)
                     .color(color));
 
-            width -= 3.0f;
+            currentLines.add(line);
+
+            width -= 1.5f;
 
             recursivelyDrawFamilyTreeLines(googleMap, father, earliestEvent, width, color);
         }
+    }
+
+    private void clearCurrentLines() {
+        for (Polyline line : currentLines) {
+            line.remove();
+        }
+
+        currentLines.clear();
     }
 
 //    private boolean isMarkerPlaced(Event event) {

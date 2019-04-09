@@ -18,6 +18,11 @@ public class Person implements Parcelable {
     private String mother;
     private String spouse;
 
+    public static final String SPOUSE_RELATIONSHIP = "Spouse";
+    public static final String CHILD_RELATIONSHIP = "Child";
+    public static final String MOTHER_RELATIONSHIP = "Mother";
+    public static final String FATHER_RELATIONSHIP = "Father";
+
     public Person() {}
 
     public Person(String id, String descendant, String firstName, String lastName, String gender, String father, String mother, String spouse) {

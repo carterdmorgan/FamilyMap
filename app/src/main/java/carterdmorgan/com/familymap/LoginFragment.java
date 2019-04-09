@@ -17,6 +17,7 @@ import android.widget.RadioGroup;
 import android.widget.Toast;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
 
 import carterdmorgan.com.familymap.api.model.Person;
 import carterdmorgan.com.familymap.api.network.FamilyMapService;
@@ -26,6 +27,7 @@ import carterdmorgan.com.familymap.api.result.CurrentEventResult;
 import carterdmorgan.com.familymap.api.result.CurrentPersonResult;
 import carterdmorgan.com.familymap.api.result.UserResult;
 import carterdmorgan.com.familymap.data.UserDataStore;
+import okhttp3.HttpUrl;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -34,25 +36,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 import static android.content.ContentValues.TAG;
 
-
-/**
- * A simple {@link Fragment} subclass.
- * Activities that contain this fragment must implement the
- * {@link LoginFragment.OnFragmentInteractionListener} interface
- * to handle interaction events.
- * Use the {@link LoginFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
 public class LoginFragment extends Fragment {
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
-
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
-
     private Button btnSignIn;
     private Button btnRegister;
     private EditText etServerHost;
@@ -65,40 +49,16 @@ public class LoginFragment extends Fragment {
     private RadioGroup rgGender;
     private OnFragmentInteractionListener mListener;
 
-    public LoginFragment() {
-        // Required empty public constructor
-    }
-
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment LoginFragment.
-     */
-    public static LoginFragment newInstance(String param1, String param2) {
-        LoginFragment fragment = new LoginFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
+    public LoginFragment() {}
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
         View view =  inflater.inflate(R.layout.fragment_login, container, false);
 
         btnSignIn = view.findViewById(R.id.sign_in_button);
@@ -133,15 +93,11 @@ public class LoginFragment extends Fragment {
         });
 
 
-        // TEST CODE ONLY
-        etServerHost.setText("10.0.2.2");
-        etServerPort.setText("8080");
-        etUserName.setText("username");
-        etPassword.setText("password");
-//        etEmail.setText("carterdmorgan@gmail.com");
-//        etFirstName.setText("Carter");
-//        etLastName.setText("Morgan");
-//        rbMale.toggle();
+        // TODO: Remove test code
+//        etServerHost.setText("10.0.2.2");
+//        etServerPort.setText("8080");
+//        etUserName.setText("username");
+//        etPassword.setText("password");
 
         btnRegister.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -266,16 +222,16 @@ public class LoginFragment extends Fragment {
         request.setFirstName(firstName);
         request.setLastName(lastName);
         if (gender == R.id.male_radio_button) {
-            request.setGender("m");
+            request.setGender(Person.GENDER_MARKER_MALE);
         } else {
-            request.setGender("f");
+            request.setGender(Person.GENDER_MARKER_FEMALE);
         }
 
         Call<UserResult> call = fmService.registerUser(request);
         call.enqueue(new Callback<UserResult>() {
             @Override
             public void onResponse(Call<UserResult> call, Response<UserResult> response) {
-                if (response.code() == 200) {
+                if (response.code() == HttpURLConnection.HTTP_OK) {
                     UserResult userResult = response.body();
                     UserDataStore.getInstance().setUserResult(userResult);
                     UserDataStore.getInstance().retrieveFamilyData(fmService, new UserDataStore.LoadFamilyDataListener() {
@@ -286,7 +242,7 @@ public class LoginFragment extends Fragment {
 
                         @Override
                         public void onFailure() {
-                            Toast.makeText(getContext(), "Register failed.", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getContext(), R.string.register_failure_message, Toast.LENGTH_SHORT).show();
                         }
                     });
                 } else {
@@ -302,7 +258,7 @@ public class LoginFragment extends Fragment {
             @Override
             public void onFailure(Call<UserResult> call, Throwable t) {
                 t.printStackTrace();
-                Toast.makeText(getContext(), "Register failed.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), getString(R.string.register_failure_message), Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -317,7 +273,7 @@ public class LoginFragment extends Fragment {
         UserDataStore.getInstance().setServerPort(serverPort);
 
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(String.format("http://%s:%s", serverHost, serverPort))
+                .baseUrl(String.format(getString(R.string.fm_server_format), serverHost, serverPort))
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
         final FamilyMapService fmService = retrofit.create(FamilyMapService.class);
@@ -340,7 +296,7 @@ public class LoginFragment extends Fragment {
 
                         @Override
                         public void onFailure() {
-                            Toast.makeText(getContext(), "Sign in failed.", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getContext(), R.string.sign_in_failure_message, Toast.LENGTH_SHORT).show();
                         }
                     });
                 } else {
@@ -349,14 +305,14 @@ public class LoginFragment extends Fragment {
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-                    Toast.makeText(getContext(), "Sign in failed.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), R.string.sign_in_failure_message, Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<UserResult> call, Throwable t) {
                 t.printStackTrace();
-                Toast.makeText(getContext(), "Sign in failed.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), R.string.sign_in_failure_message, Toast.LENGTH_SHORT).show();
             }
         });
     }

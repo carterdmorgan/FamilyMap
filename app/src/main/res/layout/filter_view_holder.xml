@@ -2,6 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    xmlns:tools="http://schemas.android.com/tools"
     android:orientation="horizontal"
     android:padding="5dp"
     android:background="@color/settingsItemBackground"
@@ -18,14 +19,14 @@
             android:layout_height="wrap_content"
             android:textColor="@android:color/black"
             android:textSize="@dimen/settings_title_size"
-            android:text="Title"/>
+            tools:text="Title"/>
         <TextView
             android:id="@+id/filter_view_holder_subtitle_text_view"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@android:color/black"
             android:textSize="@dimen/settings_subtitle_size"
-            android:text="SUBTITLE GOES HERE"/>
+            tools:text="SUBTITLE GOES HERE"/>
     </LinearLayout>
     <Switch
         android:id="@+id/filter_view_holder_switch"

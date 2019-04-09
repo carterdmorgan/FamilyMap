@@ -9,30 +9,18 @@ import android.view.MenuItem;
 import android.widget.CompoundButton;
 import android.widget.Switch;
 
+import carterdmorgan.com.familymap.containers.FamilyContainer;
 import carterdmorgan.com.familymap.data.FilterAdapter;
 import carterdmorgan.com.familymap.data.UserDataStore;
 
 public class FilterActivity extends AppCompatActivity {
 
-    private Switch switchFilterBaptism;
-    private Switch switchFilterBirth;
-    private Switch switchFilterBoughtHome;
-    private Switch switchFilterChristening;
-    private Switch switchFilterDeath;
-    private Switch switchFilterFirstCommunion;
-    private Switch switchFilterJoinedMilitary;
-    private Switch switchFilterMarriage;
-    private Switch switchFilterSavedLife;
-    private Switch switchFilterStartedFirstJob;
-    private Switch switchFilterWonLottery;
     private Switch switchFathersSide;
     private Switch switchMothersSide;
     private Switch switchMale;
     private Switch switchFemale;
-
     private RecyclerView rvFilters;
     private RecyclerView.Adapter filterAdapter;
-    private RecyclerView.LayoutManager filterLayoutManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,21 +30,8 @@ public class FilterActivity extends AppCompatActivity {
         initializeSwitches();
 
         rvFilters = findViewById(R.id.filter_recycler_view);
-//        rvFilters.setHasFixedSize(true);
 
-        filterLayoutManager = new LinearLayoutManager(this) {
-            @Override
-            public boolean canScrollVertically() {
-                return false;
-            }
-
-            @Override
-            public boolean canScrollHorizontally() {
-                return false;
-            }
-        };
-
-        rvFilters.setLayoutManager(filterLayoutManager);
+        rvFilters.setLayoutManager(FamilyContainer.getNoScrollManager(FilterActivity.this));
         rvFilters.setNestedScrollingEnabled(false);
 
         filterAdapter = new FilterAdapter(UserDataStore.getInstance().getEventTypes());
@@ -74,83 +49,6 @@ public class FilterActivity extends AppCompatActivity {
         switchMothersSide.setChecked(UserDataStore.getInstance().isShowMother());
         switchMale.setChecked(UserDataStore.getInstance().isShowMale());
         switchFemale.setChecked(UserDataStore.getInstance().isShowFemale());
-
-//        switchFilterBaptism.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-//            @Override
-//            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-//                UserDataStore.getInstance().setShowBaptism(isChecked);
-//            }
-//        });
-//
-//        switchFilterBirth.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-//            @Override
-//            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-//                UserDataStore.getInstance().setShowBirth(isChecked);
-//            }
-//        });
-//
-//        switchFilterBoughtHome.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-//            @Override
-//            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-//                UserDataStore.getInstance().setShowBoughtHome(isChecked);
-//            }
-//        });
-//
-//        switchFilterChristening.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-//            @Override
-//            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-//                UserDataStore.getInstance().setShowChristening(isChecked);
-//            }
-//        });
-//
-//        switchFilterDeath.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-//            @Override
-//            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-//                UserDataStore.getInstance().setShowDeath(isChecked);
-//            }
-//        });
-//
-//        switchFilterFirstCommunion.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-//            @Override
-//            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-//                UserDataStore.getInstance().setShowFirstCommunion(isChecked);
-//            }
-//        });
-//
-//        switchFilterJoinedMilitary.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-//            @Override
-//            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-//                UserDataStore.getInstance().setShowJoinedMilitary(isChecked);
-//            }
-//        });
-//
-//        switchFilterMarriage.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-//            @Override
-//            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-//                UserDataStore.getInstance().setShowMarriage(isChecked);
-//            }
-//        });
-//
-//        switchFilterSavedLife.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-//            @Override
-//            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-//                UserDataStore.getInstance().setShowSavedLife(isChecked);
-//            }
-//        });
-//
-//        switchFilterStartedFirstJob.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-//            @Override
-//            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-//                UserDataStore.getInstance().setShowStartedFirstJob(isChecked);
-//            }
-//        });
-//
-//        switchFilterWonLottery.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-//            @Override
-//            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-//                UserDataStore.getInstance().setShowWonLottery(isChecked);
-//            }
-//        });
 
         switchFathersSide.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -186,7 +84,7 @@ public class FilterActivity extends AppCompatActivity {
         switch (item.getItemId()) {
             case (android.R.id.home):
                 Intent intent = new Intent(FilterActivity.this, MainActivity.class);
-                intent.putExtra("launchMaps", true);
+                intent.putExtra(getString(R.string.launch_maps_extra), true);
                 startActivity(intent);
                 return true;
             default:
@@ -197,7 +95,7 @@ public class FilterActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         Intent intent = new Intent(FilterActivity.this, MainActivity.class);
-        intent.putExtra("launchMaps", true);
+        intent.putExtra(getString(R.string.launch_maps_extra), true);
         startActivity(intent);
     }
 }

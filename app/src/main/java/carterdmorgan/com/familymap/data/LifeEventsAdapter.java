@@ -8,20 +8,19 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.util.ArrayList;
 
 import carterdmorgan.com.familymap.EventActivity;
-import carterdmorgan.com.familymap.PersonActivity;
 import carterdmorgan.com.familymap.R;
+import carterdmorgan.com.familymap.containers.LifeEventsContainer;
 
 public class LifeEventsAdapter extends RecyclerView.Adapter<LifeEventsAdapter.ViewHolder> {
 
     private Context context;
-    private ArrayList<PersonActivity.LifeEventsContainer> containers;
+    private ArrayList<LifeEventsContainer> containers;
 
-    public LifeEventsAdapter(Context context, ArrayList<PersonActivity.LifeEventsContainer> containers) {
+    public LifeEventsAdapter(Context context, ArrayList<LifeEventsContainer> containers) {
         this.context = context;
         this.containers = containers;
     }
@@ -48,7 +47,7 @@ public class LifeEventsAdapter extends RecyclerView.Adapter<LifeEventsAdapter.Vi
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder viewHolder, int i) {
-        final PersonActivity.LifeEventsContainer container = containers.get(i);
+        final LifeEventsContainer container = containers.get(i);
         String eventTitle = String.format("%s: %s, %s (%d)", container.getEvent().getEventType(),
                 container.getEvent().getCity(), container.getEvent().getCountry(),
                 container.getEvent().getYear());

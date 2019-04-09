@@ -13,4 +13,50 @@
         <item>Satellite</item>
         <item>Terrain</item>
     </string-array>
+
+    <string name="person_extra">person</string>
+    <string name="launch_maps_extra">launchMaps</string>
+    <string name="first_name_label">FIRST NAME</string>
+    <string name="last_name_label">LAST NAME</string>
+    <string name="gender_label">GENDER</string>
+    <string name="life_events_label">LIFE EVENTS</string>
+    <string name="family_label">FAMILY</string>
+    <string name="life_story_lines_label">Life Story Lines</string>
+    <string name="show_life_story_lines_label">SHOW LIFE STORY LINES</string>
+    <string name="family_tree_lines_label">Family Tree Lines</string>
+    <string name="show_family_tree_lines_label">SHOW TREE LINES</string>
+    <string name="server_host_label">Server Host:</string>
+    <string name="server_port_label">Server Port:</string>
+    <string name="user_name_label">User Name:</string>
+    <string name="password_label">Password:</string>
+    <string name="first_name_login_label">First Name:</string>
+    <string name="last_name_login_label">Last Name:</string>
+    <string name="email_label">Email:</string>
+    <string name="gender_login_label">Gender:</string>
+    <string name="male_title">Male</string>
+    <string name="female_title">Female</string>
+    <string name="sign_in_button_text">Sign In</string>
+    <string name="register_button_text">Register</string>
+    <string name="spouse_lines_label">Spouse Lines</string>
+    <string name="show_spouse_explanation">SHOW SPOUSE LINES</string>
+    <string name="map_type_label">Map Type</string>
+    <string name="map_type_explanation">BACKGROUND DISPLAY ON MAP</string>
+    <string name="re_sync_data_label">Re-sync Data</string>
+    <string name="re_sync_data_explanation">FROM FAMILYMAP SERVICE</string>
+    <string name="logout_label">Logout</string>
+    <string name="logout_explanation">RETURNS TO LOGIN SCREEN</string>
+    <string name="filter_fathers_side_label">Father\'s Side</string>
+    <string name="filter_fathers_side_explanation">FILTER BY FATHER\'S SIDE OF FAMILY</string>
+    <string name="filter_mothers_side_label">Mother\'s Side</string>
+    <string name="filter_mothers_side_explanation">FILTER BY MOTHER\'S SIDE OF FAMILY</string>
+    <string name="filter_male_events_label">Male Events</string>
+    <string name="filter_male_events_explanation">FILTER EVENTS BASED ON GENDER</string>
+    <string name="filter_female_events_label">Female Events</string>
+    <string name="filter_female_events_explanation">FILTER EVENTS BASED ON GENDER</string>
+    <string name="event_extra">event</string>
+    <string name="register_failure_message">Register failed.</string>
+    <string name="sign_in_failure_message">Sign in failed.</string>
+    <string name="fm_server_format">http://%s:%s</string>
+    <string name="map_back_stack_indicator">maps</string>
+    <string name="re_sync_failure_message">Failed to re-sync data.</string>
 </resources>

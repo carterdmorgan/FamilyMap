@@ -14,13 +14,14 @@ import java.util.ArrayList;
 
 import carterdmorgan.com.familymap.PersonActivity;
 import carterdmorgan.com.familymap.R;
+import carterdmorgan.com.familymap.containers.FamilyContainer;
 
 public class FamilyAdapter extends RecyclerView.Adapter<FamilyAdapter.ViewHolder>{
 
-    private ArrayList<PersonActivity.FamilyContainer> containers;
+    private ArrayList<FamilyContainer> containers;
     private Context context;
 
-    public FamilyAdapter(ArrayList<PersonActivity.FamilyContainer> containers, Context context) {
+    public FamilyAdapter(ArrayList<FamilyContainer> containers, Context context) {
         this.containers = containers;
         this.context = context;
     }
@@ -49,7 +50,7 @@ public class FamilyAdapter extends RecyclerView.Adapter<FamilyAdapter.ViewHolder
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder viewHolder, int i) {
-        final PersonActivity.FamilyContainer container = containers.get(i);
+        final FamilyContainer container = containers.get(i);
         viewHolder.tvRelationship.setText(container.getRelationship());
         viewHolder.tvName.setText(container.getPerson().getFirstName() + " " + container.getPerson().getLastName());
         viewHolder.ivPersonIcon

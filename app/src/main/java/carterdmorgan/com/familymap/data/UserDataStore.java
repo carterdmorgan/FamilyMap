@@ -1,7 +1,6 @@
 package carterdmorgan.com.familymap.data;
 
-import android.util.Log;
-
+import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -16,6 +15,8 @@ import carterdmorgan.com.familymap.api.network.FamilyMapService;
 import carterdmorgan.com.familymap.api.result.CurrentEventResult;
 import carterdmorgan.com.familymap.api.result.CurrentPersonResult;
 import carterdmorgan.com.familymap.api.result.UserResult;
+import carterdmorgan.com.familymap.containers.FamilyContainer;
+import carterdmorgan.com.familymap.containers.LifeEventsContainer;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -51,7 +52,7 @@ public class UserDataStore {
     private UserDataStore() { }
 
     public void retrieveFamilyData(final FamilyMapService fmService, LoadFamilyDataListener listener) {
-        getAllPersons(fmService, listener);
+        retrieveAllPersons(fmService, listener);
     }
 
     public Person getUserPerson() {
@@ -78,15 +79,15 @@ public class UserDataStore {
         }
     }
 
-    private void getAllPersons(final FamilyMapService fmService, final LoadFamilyDataListener listener) {
+    private void retrieveAllPersons(final FamilyMapService fmService, final LoadFamilyDataListener listener) {
         Call<CurrentPersonResult> personCall = fmService.getAllPersonsForCurrentUser(userResult.getAuthToken());
         personCall.enqueue(new Callback<CurrentPersonResult>() {
             @Override
             public void onResponse(Call<CurrentPersonResult> call, Response<CurrentPersonResult> response) {
-                if (response.code() == 200) {
+                if (response.code() == HttpURLConnection.HTTP_OK) {
                     CurrentPersonResult currentPersonResult = response.body();
                     UserDataStore.getInstance().setCurrentPersonResult(currentPersonResult);
-                    getAllEvents(fmService, listener);
+                    retrieveAllEvents(fmService, listener);
                 } else {
                     listener.onFailure();
                 }
@@ -100,7 +101,7 @@ public class UserDataStore {
         });
     }
 
-    private void getAllEvents(FamilyMapService fmService, final LoadFamilyDataListener listener) {
+    private void retrieveAllEvents(FamilyMapService fmService, final LoadFamilyDataListener listener) {
         Call<CurrentEventResult> eventCall = fmService.getAllEventsForPerson(userResult.getAuthToken());
         eventCall.enqueue(new Callback<CurrentEventResult>() {
             @Override
@@ -163,6 +164,47 @@ public class UserDataStore {
         return listTypes;
     }
 
+    public ArrayList<LifeEventsContainer> compileLifeEventsContainersForPerson(Person person) {
+        ArrayList<LifeEventsContainer> lifeEventsContainers = new ArrayList<>();
+
+        for (Event event : UserDataStore.getInstance().getFilteredEvents()) {
+            if (event.getPersonID().equals(person.getPersonID())) {
+                lifeEventsContainers.add(new LifeEventsContainer(event, person.getFullName()));
+            }
+        }
+
+        Collections.sort(lifeEventsContainers, LifeEventsContainer.SORT_BY_YEAR_AND_NAME);
+
+        return lifeEventsContainers;
+    }
+
+    public ArrayList<FamilyContainer> compileFamilyContainersForPerson(Person displayPerson) {
+        ArrayList<FamilyContainer> familyContainers = new ArrayList<>();
+
+        for (Person person : UserDataStore.getInstance().getAllPersons()) {
+            if (person.getPersonID().equals(displayPerson.getSpouse())) {
+                FamilyContainer container = new FamilyContainer(person, Person.RELATIONSHIP_SPOUSE);
+                familyContainers.add(container);
+            } else if (person.getPersonID().equals(displayPerson.getMother())) {
+                FamilyContainer container = new FamilyContainer(person, Person.RELATIONSHIP_MOTHER);
+                familyContainers.add(container);
+            } else if (person.getPersonID().equals(displayPerson.getFather())) {
+                FamilyContainer container = new FamilyContainer(person, Person.RELATIONSHIP_FATHER);
+                familyContainers.add(container);
+            } else if ((person.getMother() != null && person.getMother().equals(displayPerson.getPersonID())) ||
+                    (person.getFather() != null && person.getFather().equals(displayPerson.getPersonID()))) {
+                FamilyContainer container = new FamilyContainer(person, Person.RELATIONSHIP_CHILD);
+                familyContainers.add(container);
+            }
+        }
+
+        return familyContainers;
+    }
+
+    public ArrayList<Person> getAllPersons() {
+        return currentPersonResult.getData();
+    }
+
     public ArrayList<Event> getFilteredEvents() {
         ArrayList<Event> events = new ArrayList<>();
 
@@ -170,14 +212,14 @@ public class UserDataStore {
         Person father = null;
         Person person = getUserPerson();
 
-        for (Person p : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+        for (Person p : UserDataStore.getInstance().getAllPersons()) {
             if (p.getPersonID().equals(person.getMother())) {
                 mother = p;
                 break;
             }
         }
 
-        for (Person p : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+        for (Person p : UserDataStore.getInstance().getAllPersons()) {
             if (p.getPersonID().equals(person.getFather())) {
                 father = p;
                 break;
@@ -189,6 +231,27 @@ public class UserDataStore {
 
         for (Event event : currentEventResult.getData()) {
             if (shouldIncludeEvent(event, mothersSide, fathersSide)) {
+                events.add(event);
+            }
+        }
+
+        return events;
+    }
+
+    public Person getPersonForEvent(Event event) {
+        for (Person person : currentPersonResult.getData()) {
+            if (event.getPersonID().equals(person.getPersonID())) {
+                return person;
+            }
+        }
+        return null;
+    }
+
+    public ArrayList<Event> getAllEventsForPerson(Person person) {
+        ArrayList<Event> events = new ArrayList<>();
+
+        for (Event event : getFilteredEvents()) {
+            if (event.getPersonID().equals(person.getPersonID())) {
                 events.add(event);
             }
         }
@@ -226,7 +289,7 @@ public class UserDataStore {
     private ArrayList<Person> compileAncestors(Person descendant, ArrayList<Person> ancestors) {
         ancestors.add(descendant);
 
-        for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+        for (Person person : UserDataStore.getInstance().getAllPersons()) {
             if (person.getPersonID().equals(descendant.getFather())
                     || person.getPersonID().equals(descendant.getMother())) {
                 ancestors = compileAncestors(person, ancestors);
@@ -237,10 +300,10 @@ public class UserDataStore {
     }
 
     private boolean isMaleEvent(Event event) {
-        for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
-            if (person.getPersonID().equals(event.getPersonID()) && person.getGender().equals("m")) {
+        for (Person person : UserDataStore.getInstance().getAllPersons()) {
+            if (person.getPersonID().equals(event.getPersonID()) && person.getGender().equals(Person.GENDER_MARKER_MALE)) {
                 return true;
-            } else if (person.getPersonID().equals(event.getPersonID()) && person.getGender().equals("f")) {
+            } else if (person.getPersonID().equals(event.getPersonID()) && person.getGender().equals(Person.GENDER_MARKER_FEMALE)) {
                 return false;
             }
         }
@@ -260,7 +323,7 @@ public class UserDataStore {
     }
 
     private Person getPersonFromEvent(Event event) {
-        for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+        for (Person person : UserDataStore.getInstance().getAllPersons()) {
             if (person.getPersonID().equals(event.getPersonID())) {
                 return person;
             }
@@ -289,16 +352,8 @@ public class UserDataStore {
         this.userResult = userResult;
     }
 
-    public CurrentEventResult getCurrentEventResult() {
-        return currentEventResult;
-    }
-
     public void setCurrentEventResult(CurrentEventResult currentEventResult) {
         this.currentEventResult = currentEventResult;
-    }
-
-    public CurrentPersonResult getCurrentPersonResult() {
-        return currentPersonResult;
     }
 
     public void setCurrentPersonResult(CurrentPersonResult currentPersonResult) {

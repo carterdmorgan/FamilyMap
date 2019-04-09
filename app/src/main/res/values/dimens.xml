@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="activity_margin">10dp</dimen>
+    <dimen name="person_big_item_bottom_spacing">5dp</dimen>
+    <dimen name="person_big_item_padding">5dp</dimen>
+    <dimen name="settings_big_item_padding">5dp</dimen>
+    <dimen name="settings_big_item_bottom_spacing">5dp</dimen>
+    <dimen name="login_field_label_width">100dp</dimen>
+    <dimen name="gender_image_width">50dp</dimen>
+    <dimen name="gender_image_height">50dp</dimen>
+    <dimen name="search_view_bottom_spacing">10dp</dimen>
+</resources>

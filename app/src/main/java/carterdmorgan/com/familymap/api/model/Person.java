@@ -18,10 +18,15 @@ public class Person implements Parcelable {
     private String mother;
     private String spouse;
 
-    public static final String SPOUSE_RELATIONSHIP = "Spouse";
-    public static final String CHILD_RELATIONSHIP = "Child";
-    public static final String MOTHER_RELATIONSHIP = "Mother";
-    public static final String FATHER_RELATIONSHIP = "Father";
+    public static final String RELATIONSHIP_SPOUSE = "Spouse";
+    public static final String RELATIONSHIP_CHILD = "Child";
+    public static final String RELATIONSHIP_MOTHER = "Mother";
+    public static final String RELATIONSHIP_FATHER = "Father";
+
+    public static final String GENDER_MARKER_MALE = "m";
+    public static final String GENDER_MARKER_FEMALE = "f";
+    public static final String GENDER_TITLE_MALE = "Male";
+    public static final String GENDER_TITLE_FEMALE = "Female";
 
     public Person() {}
 
@@ -100,7 +105,10 @@ public class Person implements Parcelable {
         this.spouse = spouse;
     }
 
-
+    public String getFullName() {
+        String format = "%s %s";
+        return String.format(format, firstName, lastName);
+    }
 
     @Override
     public String toString() {

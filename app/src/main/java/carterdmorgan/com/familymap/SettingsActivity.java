@@ -49,7 +49,7 @@ public class SettingsActivity extends AppCompatActivity {
         switch (item.getItemId()) {
             case (android.R.id.home):
                 Intent intent = new Intent(SettingsActivity.this, MainActivity.class);
-                intent.putExtra("launchMaps", true);
+                intent.putExtra(getString(R.string.launch_maps_extra), true);
                 startActivity(intent);
                 return true;
             default:
@@ -60,7 +60,7 @@ public class SettingsActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         Intent intent = new Intent(SettingsActivity.this, MainActivity.class);
-        intent.putExtra("launchMaps", true);
+        intent.putExtra(getString(R.string.launch_maps_extra), true);
         startActivity(intent);
     }
 
@@ -83,9 +83,6 @@ public class SettingsActivity extends AppCompatActivity {
         spnSpouseLines.setAdapter(colorAdapter);
         spnMapType.setAdapter(mapTypeAdapter);
 
-        Log.d("test", "initializeSpinners: color 0: " + UserDataStore.getInstance().getLifeStoryLineColor());
-        Log.d("test", "initializeSpinners: color 1: " + UserDataStore.getInstance().getFamilyTreeLineColor());
-        Log.d("test", "initializeSpinners: color 2: " + UserDataStore.getInstance().getSpouseLineColor());
 
         if (UserDataStore.getInstance().getLifeStoryLineColor() == null) {
             spnLifeStoryLines.setSelection(0);
@@ -226,7 +223,7 @@ public class SettingsActivity extends AppCompatActivity {
 
     private void reSyncData() {
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(String.format("http://%s:%s", UserDataStore.getInstance().getServerHost(),
+                .baseUrl(String.format(getString(R.string.fm_server_format), UserDataStore.getInstance().getServerHost(),
                         UserDataStore.getInstance().getServerPort()))
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
@@ -235,13 +232,13 @@ public class SettingsActivity extends AppCompatActivity {
             @Override
             public void onSuccess() {
                 Intent intent = new Intent(SettingsActivity.this, MainActivity.class);
-                intent.putExtra("launchMaps", true);
+                intent.putExtra(getString(R.string.launch_maps_extra), true);
                 startActivity(intent);
             }
 
             @Override
             public void onFailure() {
-                Toast.makeText(SettingsActivity.this, "Failed to re-sync data.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(SettingsActivity.this, R.string.re_sync_failure_message, Toast.LENGTH_SHORT).show();
             }
         });
     }

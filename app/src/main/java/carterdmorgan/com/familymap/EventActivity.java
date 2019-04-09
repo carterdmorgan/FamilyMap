@@ -18,11 +18,9 @@ public class EventActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         if (savedInstanceState == null && getIntent().getExtras() != null) {
-            Event event = (Event) getIntent().getExtras().get("event");
+            Event event = (Event) getIntent().getExtras().get(getString(R.string.event_extra));
             if (event != null) {
-                // Begin the transaction
                 FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-                // Replace the contents of the container with the new fragment
                 ft.replace(R.id.fragment_placeholder_event, MapsFragment.newInstance(event));
                 ft.commit();
             }
@@ -34,7 +32,7 @@ public class EventActivity extends AppCompatActivity {
         switch (item.getItemId()) {
             case (android.R.id.home):
                 Intent intent = new Intent(EventActivity.this, MainActivity.class);
-                intent.putExtra("launchMaps", true);
+                intent.putExtra(getString(R.string.launch_maps_extra), true);
                 startActivity(intent);
                 return true;
             default:

@@ -3,16 +3,16 @@ package carterdmorgan.com.familymap;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
-import android.util.Log;
 import android.view.MenuItem;
 
 import java.util.ArrayList;
 
 import carterdmorgan.com.familymap.api.model.Event;
 import carterdmorgan.com.familymap.api.model.Person;
+import carterdmorgan.com.familymap.containers.FamilyContainer;
+import carterdmorgan.com.familymap.containers.LifeEventsContainer;
 import carterdmorgan.com.familymap.data.FamilyAdapter;
 import carterdmorgan.com.familymap.data.LifeEventsAdapter;
 import carterdmorgan.com.familymap.data.UserDataStore;
@@ -22,8 +22,8 @@ public class SearchActivity extends AppCompatActivity {
     private SearchView searchView;
     private RecyclerView rvSearchPerson;
     private RecyclerView rvSearchEvent;
-    private ArrayList<PersonActivity.LifeEventsContainer> lifeEventsContainers;
-    private ArrayList<PersonActivity.FamilyContainer> familyContainers;
+    private ArrayList<LifeEventsContainer> lifeEventsContainers;
+    private ArrayList<FamilyContainer> familyContainers;
     private LifeEventsAdapter lifeEventsAdapter;
     private FamilyAdapter familyAdapter;
     public static final String TAG = SearchActivity.class.getSimpleName();
@@ -38,42 +38,18 @@ public class SearchActivity extends AppCompatActivity {
         rvSearchPerson = findViewById(R.id.person_search_recycler_view);
         rvSearchEvent = findViewById(R.id.event_search_recycler_view);
 
-        RecyclerView.LayoutManager familyLayoutManager = new LinearLayoutManager(this) {
-            @Override
-            public boolean canScrollVertically() {
-                return false;
-            }
-
-            @Override
-            public boolean canScrollHorizontally() {
-                return false;
-            }
-        };
-
-        RecyclerView.LayoutManager lifeEventsLayoutManager = new LinearLayoutManager(this) {
-            @Override
-            public boolean canScrollHorizontally() {
-                return false;
-            }
-
-            @Override
-            public boolean canScrollVertically() {
-                return false;
-            }
-        };
-
         lifeEventsContainers = new ArrayList<>();
         familyContainers = new ArrayList<>();
 
         lifeEventsAdapter = new LifeEventsAdapter(SearchActivity.this, lifeEventsContainers);
 
-        rvSearchEvent.setLayoutManager(lifeEventsLayoutManager);
+        rvSearchEvent.setLayoutManager(FamilyContainer.getNoScrollManager(SearchActivity.this));
         rvSearchEvent.setNestedScrollingEnabled(false);
         rvSearchEvent.setAdapter(lifeEventsAdapter);
 
         familyAdapter = new FamilyAdapter(familyContainers, SearchActivity.this);
 
-        rvSearchPerson.setLayoutManager(familyLayoutManager);
+        rvSearchPerson.setLayoutManager(FamilyContainer.getNoScrollManager(SearchActivity.this));
         rvSearchPerson.setNestedScrollingEnabled(false);
         rvSearchPerson.setAdapter(familyAdapter);
 
@@ -84,9 +60,9 @@ public class SearchActivity extends AppCompatActivity {
                 familyContainers.clear();
                 lifeEventsContainers.clear();
 
-                for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+                for (Person person : UserDataStore.getInstance().getAllPersons()) {
                     if (person.getFirstName().toLowerCase().contains(s) || person.getLastName().toLowerCase().contains(s)) {
-                        familyContainers.add(new PersonActivity.FamilyContainer(person, null));
+                        familyContainers.add(new FamilyContainer(person, null));
                     }
                 }
 
@@ -103,10 +79,10 @@ public class SearchActivity extends AppCompatActivity {
                 }
 
                 for (Event event : events) {
-                    for (Person person : UserDataStore.getInstance().getCurrentPersonResult().getData()) {
+                    for (Person person : UserDataStore.getInstance().getAllPersons()) {
                         if (person.getPersonID().equals(event.getPersonID())) {
-                            PersonActivity.LifeEventsContainer container
-                                    = new PersonActivity.LifeEventsContainer(event, person.getFirstName() + " " + person.getLastName());
+                            LifeEventsContainer container
+                                    = new LifeEventsContainer(event, person.getFullName());
                             lifeEventsContainers.add(container);
                         }
                     }
@@ -129,7 +105,7 @@ public class SearchActivity extends AppCompatActivity {
         switch (item.getItemId()) {
             case (android.R.id.home):
                 Intent intent = new Intent(SearchActivity.this, MainActivity.class);
-                intent.putExtra("launchMaps", true);
+                intent.putExtra(getString(R.string.launch_maps_extra), true);
                 startActivity(intent);
                 return true;
             default:

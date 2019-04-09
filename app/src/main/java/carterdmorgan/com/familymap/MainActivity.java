@@ -16,16 +16,12 @@ public class MainActivity extends AppCompatActivity implements LoginFragment.OnF
         setContentView(R.layout.activity_main);
 
         if (UserDataStore.getInstance().getUserResult() != null) {
-            // Begin the transaction
             FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-            // Replace the contents of the container with the new fragment
             ft.replace(R.id.fragment_placeholder_main, new MapsFragment());
-            ft.addToBackStack("maps");
+            ft.addToBackStack(getString(R.string.map_back_stack_indicator));
             ft.commit();
         } else {
-            // Begin the transaction
             FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-            // Replace the contents of the container with the new fragment
             ft.replace(R.id.fragment_placeholder_main, new LoginFragment());
             ft.commit();
         }
@@ -34,12 +30,9 @@ public class MainActivity extends AppCompatActivity implements LoginFragment.OnF
     @Override
     public void onUserLoaded() {
         UserDataStore.getInstance().initializeUserPreferences();
-
-        // Begin the transaction
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-        // Replace the contents of the container with the new fragment
         ft.replace(R.id.fragment_placeholder_main, new MapsFragment());
-        ft.addToBackStack("maps");
+        ft.addToBackStack(getString(R.string.map_back_stack_indicator));
         ft.commit();
     }
 }

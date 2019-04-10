@@ -1,7 +1,6 @@
 package carterdmorgan.com.familymap;
 
 import android.content.Context;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.text.Editable;
@@ -16,18 +15,14 @@ import android.widget.EditText;
 import android.widget.RadioGroup;
 import android.widget.Toast;
 
-import java.io.IOException;
 import java.net.HttpURLConnection;
 
-import carterdmorgan.com.familymap.api.model.Person;
 import carterdmorgan.com.familymap.api.network.FamilyMapService;
 import carterdmorgan.com.familymap.api.request.LoginUserRequest;
 import carterdmorgan.com.familymap.api.request.RegisterUserRequest;
-import carterdmorgan.com.familymap.api.result.CurrentEventResult;
-import carterdmorgan.com.familymap.api.result.CurrentPersonResult;
 import carterdmorgan.com.familymap.api.result.UserResult;
+import carterdmorgan.com.familymap.data.PersonHelper;
 import carterdmorgan.com.familymap.data.UserDataStore;
-import okhttp3.HttpUrl;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -92,12 +87,6 @@ public class LoginFragment extends Fragment {
             }
         });
 
-
-        // TODO: Remove test code
-//        etServerHost.setText("10.0.2.2");
-//        etServerPort.setText("8080");
-//        etUserName.setText("username");
-//        etPassword.setText("password");
 
         btnRegister.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -222,9 +211,9 @@ public class LoginFragment extends Fragment {
         request.setFirstName(firstName);
         request.setLastName(lastName);
         if (gender == R.id.male_radio_button) {
-            request.setGender(Person.GENDER_MARKER_MALE);
+            request.setGender(PersonHelper.GENDER_MARKER_MALE);
         } else {
-            request.setGender(Person.GENDER_MARKER_FEMALE);
+            request.setGender(PersonHelper.GENDER_MARKER_FEMALE);
         }
 
         Call<UserResult> call = fmService.registerUser(request);

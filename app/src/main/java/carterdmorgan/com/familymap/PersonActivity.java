@@ -3,7 +3,6 @@ package carterdmorgan.com.familymap;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.MenuItem;
 import android.view.View;
@@ -12,16 +11,13 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 
-import carterdmorgan.com.familymap.api.model.Event;
 import carterdmorgan.com.familymap.api.model.Person;
 import carterdmorgan.com.familymap.containers.FamilyContainer;
 import carterdmorgan.com.familymap.containers.LifeEventsContainer;
-import carterdmorgan.com.familymap.data.Constants;
 import carterdmorgan.com.familymap.data.FamilyAdapter;
 import carterdmorgan.com.familymap.data.LifeEventsAdapter;
+import carterdmorgan.com.familymap.data.PersonHelper;
 import carterdmorgan.com.familymap.data.UserDataStore;
 
 public class PersonActivity extends AppCompatActivity {
@@ -98,7 +94,7 @@ public class PersonActivity extends AppCompatActivity {
         tvFirstName.setText(displayPerson.getFirstName());
         tvLastName.setText(displayPerson.getLastName());
         tvGender.setText(displayPerson.getGender()
-                .equals(Person.GENDER_MARKER_MALE) ? Person.GENDER_TITLE_MALE : Person.GENDER_TITLE_FEMALE);
+                .equals(PersonHelper.GENDER_MARKER_MALE) ? PersonHelper.GENDER_TITLE_MALE : PersonHelper.GENDER_TITLE_FEMALE);
     }
 
     private void initializeLinearLayouts() {

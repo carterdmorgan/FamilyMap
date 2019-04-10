@@ -5,6 +5,7 @@ import android.os.Parcelable;
 
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -50,6 +51,18 @@ public class Event implements Parcelable {
             }
         }
     };
+
+    public static Event getEarliestEvent(ArrayList<Event> events) {
+        Event earliestEvent = events.get(0);
+
+        for (Event e : events) {
+            if (e.getYear() < earliestEvent.getYear()) {
+                earliestEvent = e;
+            }
+        }
+
+        return earliestEvent;
+    }
 
     public String getEventID() {
         return eventID;

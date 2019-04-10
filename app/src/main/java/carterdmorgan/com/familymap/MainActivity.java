@@ -35,4 +35,10 @@ public class MainActivity extends AppCompatActivity implements LoginFragment.OnF
         ft.addToBackStack(getString(R.string.map_back_stack_indicator));
         ft.commit();
     }
+
+    @Override
+    public void onBackPressed() {
+        if (UserDataStore.getInstance().getUserResult() != null)
+            super.onBackPressed();
+    }
 }

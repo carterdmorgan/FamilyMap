@@ -9,13 +9,11 @@ import android.view.MenuItem;
 
 import java.util.ArrayList;
 
-import carterdmorgan.com.familymap.api.model.Event;
-import carterdmorgan.com.familymap.api.model.Person;
 import carterdmorgan.com.familymap.containers.FamilyContainer;
 import carterdmorgan.com.familymap.containers.LifeEventsContainer;
 import carterdmorgan.com.familymap.data.FamilyAdapter;
 import carterdmorgan.com.familymap.data.LifeEventsAdapter;
-import carterdmorgan.com.familymap.data.UserDataStore;
+import carterdmorgan.com.familymap.data.Search;
 
 public class SearchActivity extends AppCompatActivity {
 
@@ -26,6 +24,7 @@ public class SearchActivity extends AppCompatActivity {
     private ArrayList<FamilyContainer> familyContainers;
     private LifeEventsAdapter lifeEventsAdapter;
     private FamilyAdapter familyAdapter;
+    private Search search;
     public static final String TAG = SearchActivity.class.getSimpleName();
 
     @Override
@@ -34,7 +33,12 @@ public class SearchActivity extends AppCompatActivity {
         setContentView(R.layout.activity_search);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        searchView = findViewById(R.id.search_view);
+        search = new Search();
+        initializeRecyclerViews();
+        initializeSearchView();
+    }
+
+    private void initializeRecyclerViews() {
         rvSearchPerson = findViewById(R.id.person_search_recycler_view);
         rvSearchEvent = findViewById(R.id.event_search_recycler_view);
 
@@ -52,41 +56,15 @@ public class SearchActivity extends AppCompatActivity {
         rvSearchPerson.setLayoutManager(FamilyContainer.getNoScrollManager(SearchActivity.this));
         rvSearchPerson.setNestedScrollingEnabled(false);
         rvSearchPerson.setAdapter(familyAdapter);
+    }
+
+    private void initializeSearchView() {
+        searchView = findViewById(R.id.search_view);
 
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String s) {
-                s = s.toLowerCase();
-                familyContainers.clear();
-                lifeEventsContainers.clear();
-
-                for (Person person : UserDataStore.getInstance().getAllPersons()) {
-                    if (person.getFirstName().toLowerCase().contains(s) || person.getLastName().toLowerCase().contains(s)) {
-                        familyContainers.add(new FamilyContainer(person, null));
-                    }
-                }
-
-
-                ArrayList<Event> events = new ArrayList<>();
-
-                for (Event event : UserDataStore.getInstance().getFilteredEvents()) {
-                    if (event.getEventType().toLowerCase().contains(s)
-                            || event.getCountry().toLowerCase().contains(s)
-                            || event.getCity().toLowerCase().contains(s)
-                            || Integer.toString(event.getYear()).toLowerCase().contains(s)) {
-                        events.add(event);
-                    }
-                }
-
-                for (Event event : events) {
-                    for (Person person : UserDataStore.getInstance().getAllPersons()) {
-                        if (person.getPersonID().equals(event.getPersonID())) {
-                            LifeEventsContainer container
-                                    = new LifeEventsContainer(event, person.getFullName());
-                            lifeEventsContainers.add(container);
-                        }
-                    }
-                }
+                search.executeQuery(s, familyContainers, lifeEventsContainers);
 
                 familyAdapter.notifyDataSetChanged();
                 lifeEventsAdapter.notifyDataSetChanged();

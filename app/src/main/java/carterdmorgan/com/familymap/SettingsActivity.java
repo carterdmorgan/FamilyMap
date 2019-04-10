@@ -57,13 +57,6 @@ public class SettingsActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    public void onBackPressed() {
-        Intent intent = new Intent(SettingsActivity.this, MainActivity.class);
-        intent.putExtra(getString(R.string.launch_maps_extra), true);
-        startActivity(intent);
-    }
-
     private void initializeSpinners() {
         spnLifeStoryLines = findViewById(R.id.life_story_line_spinner);
         spnFamilyTreeLines = findViewById(R.id.family_tree_line_spinner);

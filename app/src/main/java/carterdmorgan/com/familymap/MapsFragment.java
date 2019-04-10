@@ -2,12 +2,10 @@ package carterdmorgan.com.familymap;
 
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -17,9 +15,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -27,7 +23,6 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
@@ -35,15 +30,13 @@ import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 import carterdmorgan.com.familymap.api.model.Event;
 import carterdmorgan.com.familymap.api.model.Person;
 import carterdmorgan.com.familymap.data.MapType;
-import carterdmorgan.com.familymap.data.RelationshipLines;
+import carterdmorgan.com.familymap.data.PersonHelper;
 import carterdmorgan.com.familymap.data.UserDataStore;
 
 
@@ -62,7 +55,6 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
     private ImageView ivGenderIcon;
     private LinearLayout llEventInfo;
     private SupportMapFragment supportMapFragment;
-    private Person currentPerson;
     private Event zoomEvent;
     private ArrayList<Polyline> familyTreeLines;
     private ArrayList<Polyline> spouseLines;
@@ -71,10 +63,11 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
     public static final String ARG_ZOOM_EVENT = "zoom_event";
 
     private static final float STARTING_WIDTH = 15.0f;
-    private static final float WIDTH_DECREMENT = 1.5f;
+    private static final float WIDTH_DECREMENT = 3.0f;
 
     private Map<Marker, Event> markerEventMap;
     private ArrayList<Marker> markers = new ArrayList<>();
+    private Person currentPerson;
 
     public MapsFragment() { }
 
@@ -90,6 +83,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
+
         markerEventMap = new HashMap<>();
         familyTreeLines = new ArrayList<>();
         spouseLines = new ArrayList<>();
@@ -109,6 +103,13 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_maps, container, false);
 
+        initializeEventInfoBox(view);
+        initializeGoogleMap();
+
+        return view;
+    }
+
+    private void initializeEventInfoBox(View view) {
         tvEventPerson = view.findViewById(R.id.event_person_text_view);
         tvEventType = view.findViewById(R.id.event_type_text_view);
         tvEventLocation = view.findViewById(R.id.event_location_text_view);
@@ -126,13 +127,13 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
                 }
             }
         });
+    }
 
+    private void initializeGoogleMap() {
         supportMapFragment = (SupportMapFragment) getChildFragmentManager()
                 .findFragmentById(R.id.support_maps_fragment);
 
         supportMapFragment.getMapAsync(this);
-
-        return view;
     }
 
     @Override
@@ -173,8 +174,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
         super.onDetach();
     }
 
-    @Override
-    public void onMapReady(GoogleMap googleMap) {
+    private void setMapType(GoogleMap googleMap) {
         switch (UserDataStore.getInstance().getMapType()) {
             case MapType.NORMAL:
                 googleMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
@@ -192,11 +192,10 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
                 googleMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
                 break;
         }
+    }
 
-
-        googleMap.setOnMarkerClickListener(getMarkerClickListener(googleMap));
-
-        for (Event event : UserDataStore.getInstance().getFilteredEvents()) {
+    private void generateMarkers(GoogleMap googleMap, ArrayList<Event> events) {
+        for (Event event : events) {
             Float color = UserDataStore.getInstance().getMarkerColors().get(event.getEventType().toLowerCase());
             LatLng location = new LatLng(event.getLatitude(), event.getLongitude());
             MarkerOptions markerOptions = new MarkerOptions().position(location).icon(BitmapDescriptorFactory.defaultMarker(color));
@@ -204,104 +203,45 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
             markers.add(marker);
             markerEventMap.put(marker, event);
         }
+    }
+
+    private void populateEventInfoBox(Event event, Person person) {
+        tvEventPerson.setText(person.getFullName());
+        tvEventType.setText(event.getEventType());
+        tvEventLocation.setText(event.getCity() + ", " + event.getCountry());
+        tvEventDate.setText(Integer.toString(event.getYear()));
+
+        if (person.getGender().equals(PersonHelper.GENDER_MARKER_FEMALE)) {
+            ivGenderIcon.setImageDrawable(getContext().getDrawable(R.drawable.ic_person_pink_100_24dp));
+        } else {
+            ivGenderIcon.setImageDrawable(getContext().getDrawable(R.drawable.ic_person_blue_400_24dp));
+        }
+    }
+
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        setMapType(googleMap);
+        googleMap.setOnMarkerClickListener(getMarkerClickListener(googleMap));
+        generateMarkers(googleMap, UserDataStore.getInstance().getFilteredEvents());
 
         if (zoomEvent != null) {
             Event event = zoomEvent;
-            Person spouse = null;
 
-            currentPerson = UserDataStore.getInstance().getPersonForEvent(zoomEvent);
+            Person person = UserDataStore.getInstance().getPersonForEvent(zoomEvent);
+            currentPerson = person;
 
-            tvEventPerson.setText(currentPerson.getFullName());
-            tvEventType.setText(event.getEventType());
-            tvEventLocation.setText(event.getCity() + ", " + event.getCountry());
-            tvEventDate.setText(Integer.toString(event.getYear()));
-
-            if (currentPerson.getGender().equals(Person.GENDER_MARKER_FEMALE)) {
-                ivGenderIcon.setImageDrawable(getContext().getDrawable(R.drawable.ic_person_pink_100_24dp));
-            } else {
-                ivGenderIcon.setImageDrawable(getContext().getDrawable(R.drawable.ic_person_blue_400_24dp));
-            }
-
-            if (UserDataStore.getInstance().isShowLifeStoryLines())
-                drawLifeStoryLines(googleMap, event);
-
-            if (UserDataStore.getInstance().isShowSpouseLines()) {
-                clearSpouseLines();
-
-                int color = 0;
-                if (UserDataStore.getInstance().getSpouseLineColor().equals(RelationshipLines.RED)) {
-                    color = Color.RED;
-                } else if (UserDataStore.getInstance().getSpouseLineColor().equals(RelationshipLines.BLUE)) {
-                    color = Color.BLUE;
-                } else if (UserDataStore.getInstance().getSpouseLineColor().equals(RelationshipLines.GREEN)) {
-                    color = Color.GREEN;
-                }
-
-                if (currentPerson != null && currentPerson.getSpouse() != null) {
-                    for (Person p : UserDataStore.getInstance().getAllPersons()) {
-                        if (currentPerson.getSpouse() != null && p.getPersonID().equals(currentPerson.getSpouse())) {
-                            spouse = p;
-                            break;
-                        }
-                    }
-
-                    if (spouse != null) {
-                        ArrayList<Event> spouseEvents = new ArrayList<>();
-                        ArrayList<Event> allEvents = new ArrayList<>();
-
-                        for (Marker m : markers) {
-                            allEvents.add(markerEventMap.get(m));
-                        }
-
-                        for (Event e : allEvents) {
-                            if (e.getPersonID().equals(spouse.getPersonID())) {
-                                spouseEvents.add(e);
-                            }
-                        }
-
-                        Event earliestEvent = spouseEvents.get(0);
-
-                        for (Event e : spouseEvents) {
-                            if (e.getYear() < earliestEvent.getYear()) {
-                                earliestEvent = e;
-                            }
-                        }
-
-
-                        Polyline line = googleMap.addPolyline(new PolylineOptions()
-                                .add(new LatLng(event.getLatitude(), event.getLongitude()),
-                                        new LatLng(earliestEvent.getLatitude(), earliestEvent.getLongitude()))
-                                .width(STARTING_WIDTH)
-                                .color(color));
-                        spouseLines.add(line);
-                    }
-                }
-
-            }
-
-            if (UserDataStore.getInstance().isShowFamilyTreeLines()) {
-                clearFamilyTreeLines();
-
-                if (currentPerson != null) {
-                    int color = 0;
-                    if (UserDataStore.getInstance().getFamilyTreeLineColor().equals(RelationshipLines.RED)) {
-                        color = Color.RED;
-                    } else if (UserDataStore.getInstance().getFamilyTreeLineColor().equals(RelationshipLines.BLUE)) {
-                        color = Color.BLUE;
-                    } else if (UserDataStore.getInstance().getFamilyTreeLineColor().equals(RelationshipLines.GREEN)) {
-                        color = Color.GREEN;
-                    }
-
-                    recursivelyDrawFamilyTreeLines(googleMap, currentPerson, event, STARTING_WIDTH, color);
-                }
-            }
-
-            CameraPosition cameraPosition = new CameraPosition.Builder()
-                    .target(new LatLng(zoomEvent.getLatitude(), zoomEvent.getLongitude()))
-                    .zoom(3)
-                    .build();
-            googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+            populateEventInfoBox(event, person);
+            drawLines(googleMap, event, person);
+            zoomCameraOnEvent(googleMap, event);
         }
+    }
+
+    private void zoomCameraOnEvent(GoogleMap googleMap, Event event) {
+        CameraPosition cameraPosition = new CameraPosition.Builder()
+                .target(new LatLng(event.getLatitude(), event.getLongitude()))
+                .zoom(3)
+                .build();
+        googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
     }
 
     private GoogleMap.OnMarkerClickListener getMarkerClickListener(final GoogleMap googleMap) {
@@ -309,215 +249,120 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
             @Override
             public boolean onMarkerClick(Marker marker) {
                 Event event = markerEventMap.get(marker);
-                Person person = null;
-                Person spouse = null;
+                Person person = UserDataStore.getInstance().getPersonForEvent(event);
+                currentPerson = person;
 
-                for (Person p : UserDataStore.getInstance().getAllPersons()) {
-                    if (p.getPersonID().equals(event.getPersonID())) {
-                        tvEventPerson.setText(p.getFullName());
-                        currentPerson = p;
-                        person = p;
-                    }
-                }
-
-                tvEventType.setText(event.getEventType());
-                tvEventLocation.setText(event.getCity() + ", " + event.getCountry());
-                tvEventDate.setText(Integer.toString(event.getYear()));
-
-                if (currentPerson.getGender().equals(Person.GENDER_MARKER_FEMALE)) {
-                    ivGenderIcon.setImageDrawable(getContext().getDrawable(R.drawable.ic_person_pink_100_24dp));
-                } else {
-                    ivGenderIcon.setImageDrawable(getContext().getDrawable(R.drawable.ic_person_blue_400_24dp));
-                }
-
-                if (UserDataStore.getInstance().isShowLifeStoryLines())
-                    drawLifeStoryLines(googleMap, event);
-
-                if (UserDataStore.getInstance().isShowSpouseLines()) {
-                    clearSpouseLines();
-
-                    int color = 0;
-                    if (UserDataStore.getInstance().getSpouseLineColor().equals(RelationshipLines.RED)) {
-                        color = Color.RED;
-                    } else if (UserDataStore.getInstance().getSpouseLineColor().equals(RelationshipLines.BLUE)) {
-                        color = Color.BLUE;
-                    } else if (UserDataStore.getInstance().getSpouseLineColor().equals(RelationshipLines.GREEN)) {
-                        color = Color.GREEN;
-                    }
-
-                    if (person != null && person.getSpouse() != null) {
-                        for (Person p : UserDataStore.getInstance().getAllPersons()) {
-                            if (person.getSpouse() != null && p.getPersonID().equals(person.getSpouse())) {
-                                spouse = p;
-                                break;
-                            }
-                        }
-
-                        if (spouse != null) {
-                            ArrayList<Event> spouseEvents = new ArrayList<>();
-                            ArrayList<Event> allEvents = new ArrayList<>();
-
-                            for (Marker m : markers) {
-                                allEvents.add(markerEventMap.get(m));
-                            }
-
-                            for (Event e : allEvents) {
-                                if (e.getPersonID().equals(spouse.getPersonID())) {
-                                    spouseEvents.add(e);
-                                }
-                            }
-
-                            Event earliestEvent = spouseEvents.get(0);
-
-                            for (Event e : spouseEvents) {
-                                if (e.getYear() < earliestEvent.getYear()) {
-                                    earliestEvent = e;
-                                }
-                            }
-
-
-                            Polyline line = googleMap.addPolyline(new PolylineOptions()
-                                    .add(new LatLng(event.getLatitude(), event.getLongitude()),
-                                            new LatLng(earliestEvent.getLatitude(), earliestEvent.getLongitude()))
-                                    .width(STARTING_WIDTH)
-                                    .color(color));
-                            spouseLines.add(line);
-                        }
-                    }
-
-                }
-
-                if (UserDataStore.getInstance().isShowFamilyTreeLines()) {
-                    clearFamilyTreeLines();
-
-                    if (person != null) {
-                        int color = 0;
-                        if (UserDataStore.getInstance().getFamilyTreeLineColor().equals(RelationshipLines.RED)) {
-                            color = Color.RED;
-                        } else if (UserDataStore.getInstance().getFamilyTreeLineColor().equals(RelationshipLines.BLUE)) {
-                            color = Color.BLUE;
-                        } else if (UserDataStore.getInstance().getFamilyTreeLineColor().equals(RelationshipLines.GREEN)) {
-                            color = Color.GREEN;
-                        }
-
-                        recursivelyDrawFamilyTreeLines(googleMap, person, event, STARTING_WIDTH, color);
-                    }
-                }
+                populateEventInfoBox(event, person);
+                drawLines(googleMap, event, person);
 
                 return true;
             }
         };
     }
 
-    private void drawLifeStoryLines(GoogleMap googleMap, Event event) {
-        clearLifeStoryLines();
+    private void drawLines(GoogleMap googleMap, Event event, Person person) {
+        if (UserDataStore.getInstance().isShowLifeStoryLines())
+            drawLifeStoryLines(googleMap, event);
 
-        int color = 0;
-        if (UserDataStore.getInstance().getLifeStoryLineColor().equals(RelationshipLines.RED)) {
-            color = Color.RED;
-        } else if (UserDataStore.getInstance().getLifeStoryLineColor().equals(RelationshipLines.BLUE)) {
-            color = Color.BLUE;
-        } else if (UserDataStore.getInstance().getLifeStoryLineColor().equals(RelationshipLines.GREEN)) {
-            color = Color.GREEN;
+        if (UserDataStore.getInstance().isShowSpouseLines()) {
+            drawSpouseLines(googleMap, person, event);
         }
 
+        if (UserDataStore.getInstance().isShowFamilyTreeLines()) {
+            drawFamilyTreeLines(googleMap, person, event);
+        }
+    }
 
+    private void drawSpouseLines(GoogleMap googleMap, Person person, Event event) {
+        Person spouse = null;
+        clearSpouseLines();
+
+        int color = UserDataStore.getInstance().getColorCode(UserDataStore.getInstance().getSpouseLineColor());
+
+        if (person != null && person.getSpouse() != null) {
+            for (Person p : UserDataStore.getInstance().getAllPersons()) {
+                if (person.getSpouse() != null && p.getPersonID().equals(person.getSpouse())) {
+                    spouse = p;
+                    break;
+                }
+            }
+
+            if (spouse != null) {
+                ArrayList<Event> spouseEvents = new ArrayList<>();
+                ArrayList<Event> allEvents = new ArrayList<>();
+
+                for (Marker m : markers) {
+                    allEvents.add(markerEventMap.get(m));
+                }
+
+                for (Event e : allEvents) {
+                    if (e.getPersonID().equals(spouse.getPersonID())) {
+                        spouseEvents.add(e);
+                    }
+                }
+
+                Event earliestEvent = Event.getEarliestEvent(spouseEvents);
+
+                Polyline line = createPolylineFromEvents(googleMap, event, earliestEvent, STARTING_WIDTH, color);
+                spouseLines.add(line);
+            }
+        }
+    }
+
+    private void drawFamilyTreeLines(GoogleMap googleMap, Person person, Event event) {
+        clearFamilyTreeLines();
+        if (person != null) {
+            int color = UserDataStore.getInstance().getColorCode(UserDataStore.getInstance().getFamilyTreeLineColor());
+            recursivelyDrawFamilyTreeLines(googleMap, person, event, STARTING_WIDTH, color);
+        }
+    }
+
+    private void drawLifeStoryLines(GoogleMap googleMap, Event event) {
+        clearLifeStoryLines();
+        int color = UserDataStore.getInstance().getColorCode(UserDataStore.getInstance().getLifeStoryLineColor());
         ArrayList<Event> events
                 = UserDataStore.getInstance().getAllEventsForPerson(UserDataStore.getInstance().getPersonForEvent(event));
-
         Collections.sort(events, Event.SORT_BY_YEAR_AND_NAME);
 
         for (int i = 0; i < events.size() - 1; i++) {
             Event event0 = events.get(i);
             Event event1 = events.get(i+1);
-            Polyline line = googleMap.addPolyline(new PolylineOptions()
-                    .add(new LatLng(event0.getLatitude(), event0.getLongitude()),
-                            new LatLng(event1.getLatitude(), event1.getLongitude()))
-                    .width(STARTING_WIDTH)
-                    .color(color));
+            Polyline line = createPolylineFromEvents(googleMap, event0, event1, STARTING_WIDTH, color);
             lifeStoryLines.add(line);
         }
     }
 
     private void recursivelyDrawFamilyTreeLines(GoogleMap googleMap, Person person, Event event, float width, int color) {
-        Person mother = null;
-        Person father = null;
-
-        // TODO: Make helper class for this
-        for (Person p : UserDataStore.getInstance().getAllPersons()) {
-            if (p.getPersonID().equals(person.getMother())) {
-                mother = p;
-                break;
-            }
-        }
-
-        // TODO: Make helper class for this
-        for (Person p : UserDataStore.getInstance().getAllPersons()) {
-            if (p.getPersonID().equals(person.getFather())) {
-                father = p;
-                break;
-            }
-        }
+        Person mother = UserDataStore.getInstance().getMotherForPerson(person);
+        Person father = UserDataStore.getInstance().getFatherForPerson(person);;
 
         if (mother != null) {
-            ArrayList<Event> events = new ArrayList<>();
-
-            for (Event e : UserDataStore.getInstance().getFilteredEvents()) {
-                if (e.getPersonID().equals(mother.getPersonID())) {
-                    events.add(e);
-                }
-            }
-
-            Event earliestEvent = events.get(0);
-
-            for (Event e : events) {
-                if (e.getYear() < earliestEvent.getYear()) {
-                    earliestEvent = e;
-                }
-            }
-
-            Polyline line = googleMap.addPolyline(new PolylineOptions()
-                    .add(new LatLng(event.getLatitude(), event.getLongitude()),
-                            new LatLng(earliestEvent.getLatitude(), earliestEvent.getLongitude()))
-                    .width(width)
-                    .color(color));
-
+            ArrayList<Event> events = UserDataStore.getInstance().getAllEventsForPerson(mother);
+            Event earliestEvent = Event.getEarliestEvent(events);
+            Polyline line = createPolylineFromEvents(googleMap, event, earliestEvent, width, color);
             familyTreeLines.add(line);
-
             width -= WIDTH_DECREMENT;
-
             recursivelyDrawFamilyTreeLines(googleMap, mother, earliestEvent, width, color);
         }
 
         if (father != null) {
-            ArrayList<Event> events = new ArrayList<>();
-
-            for (Event e : UserDataStore.getInstance().getFilteredEvents()) {
-                if (e.getPersonID().equals(father.getPersonID())) {
-                    events.add(e);
-                }
-            }
-
-            Event earliestEvent = events.get(0);
-
-            for (Event e : events) {
-                if (e.getYear() < earliestEvent.getYear()) {
-                    earliestEvent = e;
-                }
-            }
-
-            Polyline line = googleMap.addPolyline(new PolylineOptions()
-                    .add(new LatLng(event.getLatitude(), event.getLongitude()),
-                            new LatLng(earliestEvent.getLatitude(), earliestEvent.getLongitude()))
-                    .width(width)
-                    .color(color));
-
+            ArrayList<Event> events = UserDataStore.getInstance().getAllEventsForPerson(father);
+            Event earliestEvent = Event.getEarliestEvent(events);
+            Polyline line = createPolylineFromEvents(googleMap, event, earliestEvent, width, color);
             familyTreeLines.add(line);
-
             width -= WIDTH_DECREMENT;
-
             recursivelyDrawFamilyTreeLines(googleMap, father, earliestEvent, width, color);
         }
+    }
+
+    private Polyline createPolylineFromEvents(GoogleMap googleMap, Event event1, Event event2, float width, int color) {
+        Polyline line = googleMap.addPolyline(new PolylineOptions()
+                .add(new LatLng(event1.getLatitude(), event1.getLongitude()),
+                        new LatLng(event2.getLatitude(), event2.getLongitude()))
+                .width(width)
+                .color(color));
+
+        return line;
     }
 
     private void clearLifeStoryLines() {

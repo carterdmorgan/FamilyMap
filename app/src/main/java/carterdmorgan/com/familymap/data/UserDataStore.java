@@ -1,5 +1,7 @@
 package carterdmorgan.com.familymap.data;
 
+import android.graphics.Color;
+
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -180,20 +182,12 @@ public class UserDataStore {
 
     public ArrayList<FamilyContainer> compileFamilyContainersForPerson(Person displayPerson) {
         ArrayList<FamilyContainer> familyContainers = new ArrayList<>();
+        PersonHelper personHelper = new PersonHelper();
 
         for (Person person : UserDataStore.getInstance().getAllPersons()) {
-            if (person.getPersonID().equals(displayPerson.getSpouse())) {
-                FamilyContainer container = new FamilyContainer(person, Person.RELATIONSHIP_SPOUSE);
-                familyContainers.add(container);
-            } else if (person.getPersonID().equals(displayPerson.getMother())) {
-                FamilyContainer container = new FamilyContainer(person, Person.RELATIONSHIP_MOTHER);
-                familyContainers.add(container);
-            } else if (person.getPersonID().equals(displayPerson.getFather())) {
-                FamilyContainer container = new FamilyContainer(person, Person.RELATIONSHIP_FATHER);
-                familyContainers.add(container);
-            } else if ((person.getMother() != null && person.getMother().equals(displayPerson.getPersonID())) ||
-                    (person.getFather() != null && person.getFather().equals(displayPerson.getPersonID()))) {
-                FamilyContainer container = new FamilyContainer(person, Person.RELATIONSHIP_CHILD);
+            String relationship = personHelper.determineRelationship(displayPerson, person);
+            if (relationship != null) {
+                FamilyContainer container = new FamilyContainer(person, relationship);
                 familyContainers.add(container);
             }
         }
@@ -247,6 +241,26 @@ public class UserDataStore {
         return null;
     }
 
+    public Person getMotherForPerson(Person person) {
+        for (Person p : UserDataStore.getInstance().getAllPersons()) {
+            if (p.getPersonID().equals(person.getMother())) {
+                return p;
+            }
+        }
+
+        return null;
+    }
+
+    public Person getFatherForPerson(Person person) {
+        for (Person p : UserDataStore.getInstance().getAllPersons()) {
+            if (p.getPersonID().equals(person.getFather())) {
+                return p;
+            }
+        }
+
+        return null;
+    }
+
     public ArrayList<Event> getAllEventsForPerson(Person person) {
         ArrayList<Event> events = new ArrayList<>();
 
@@ -256,7 +270,21 @@ public class UserDataStore {
             }
         }
 
+        Collections.sort(events, Event.SORT_BY_YEAR_AND_NAME);
+
         return events;
+    }
+
+    public int getColorCode(String lineColor) {
+        if (lineColor.equals(RelationshipLines.RED)) {
+            return Color.RED;
+        } else if (lineColor.equals(RelationshipLines.BLUE)) {
+            return Color.BLUE;
+        } else if (lineColor.equals(RelationshipLines.GREEN)) {
+            return Color.GREEN;
+        }
+
+        return 0;
     }
 
     private boolean shouldIncludeEvent(Event event, ArrayList<Person> mothersSide, ArrayList<Person> fathersSide) {
@@ -301,9 +329,9 @@ public class UserDataStore {
 
     private boolean isMaleEvent(Event event) {
         for (Person person : UserDataStore.getInstance().getAllPersons()) {
-            if (person.getPersonID().equals(event.getPersonID()) && person.getGender().equals(Person.GENDER_MARKER_MALE)) {
+            if (person.getPersonID().equals(event.getPersonID()) && person.getGender().equals(PersonHelper.GENDER_MARKER_MALE)) {
                 return true;
-            } else if (person.getPersonID().equals(event.getPersonID()) && person.getGender().equals(Person.GENDER_MARKER_FEMALE)) {
+            } else if (person.getPersonID().equals(event.getPersonID()) && person.getGender().equals(PersonHelper.GENDER_MARKER_FEMALE)) {
                 return false;
             }
         }

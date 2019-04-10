@@ -1,5 +1,7 @@
 package carterdmorgan.com.familymap.data;
 
+import java.util.ArrayList;
+
 import carterdmorgan.com.familymap.api.model.Event;
 import carterdmorgan.com.familymap.api.model.Person;
 
@@ -29,7 +31,13 @@ public class PersonHelper {
         }
     }
 
-    public Person getPersonFromEvent(Event event) {
-        
+    public Person getPersonFromEvent(Event event, ArrayList<Person> persons) {
+        for (Person person : persons) {
+            if (person.getPersonID().equals(event.getPersonID())) {
+                return person;
+            }
+        }
+
+        return null;
     }
 }

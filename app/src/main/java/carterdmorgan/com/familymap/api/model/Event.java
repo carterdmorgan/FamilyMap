@@ -37,21 +37,6 @@ public class Event implements Parcelable {
         this.year = year;
     }
 
-    public static final Comparator<Event> SORT_BY_YEAR_AND_NAME = new Comparator<Event>() {
-        @Override
-        public int compare(Event o1, Event o2) {
-            Integer i1 = new Integer(o1.getYear());
-            Integer i2 = new Integer(o2.getYear());
-
-            if (!i2.equals(i1)) {
-                return i1.compareTo(i2);
-            } else {
-                return o1.getEventType().toLowerCase()
-                        .compareTo(o2.getEventType().toLowerCase());
-            }
-        }
-    };
-
     public static Event getEarliestEvent(ArrayList<Event> events) {
         Event earliestEvent = events.get(0);
 

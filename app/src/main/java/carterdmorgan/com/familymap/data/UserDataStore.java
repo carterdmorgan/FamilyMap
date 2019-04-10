@@ -47,6 +47,8 @@ public class UserDataStore {
     private boolean showFamilyTreeLines = false;
     private boolean showSpouseLines = false;
 
+    private PersonHelper personHelper = new PersonHelper();
+
     public static UserDataStore getInstance() {
         return instance;
     }
@@ -200,8 +202,6 @@ public class UserDataStore {
     }
 
     public ArrayList<Event> getFilteredEvents() {
-        ArrayList<Event> events = new ArrayList<>();
-
         Person mother = null;
         Person father = null;
         Person person = getUserPerson();
@@ -223,13 +223,19 @@ public class UserDataStore {
         ArrayList<Person> mothersSide = compileAncestors(mother, new ArrayList<Person>());
         ArrayList<Person> fathersSide = compileAncestors(father, new ArrayList<Person>());
 
-        for (Event event : currentEventResult.getData()) {
-            if (shouldIncludeEvent(event, mothersSide, fathersSide)) {
-                events.add(event);
-            }
-        }
+        EventHelper eventHelper = new EventHelper.Builder()
+                .setEvents(currentEventResult.getData())
+                .setAllPersons(getAllPersons())
+                .setFathersSide(fathersSide)
+                .setMothersSide(mothersSide)
+                .setFilterPreferences(getFilterPreferences())
+                .setShowFather(showFather)
+                .setShowMother(showMother)
+                .setShowMale(showMale)
+                .setShowFemale(showFemale)
+                .build();
 
-        return events;
+        return eventHelper.getFilteredEvents();
     }
 
     public Person getPersonForEvent(Event event) {
@@ -270,7 +276,7 @@ public class UserDataStore {
             }
         }
 
-        Collections.sort(events, Event.SORT_BY_YEAR_AND_NAME);
+        Collections.sort(events, EventHelper.SORT_BY_YEAR_THEN_NAME);
 
         return events;
     }
@@ -287,32 +293,32 @@ public class UserDataStore {
         return 0;
     }
 
-    private boolean shouldIncludeEvent(Event event, ArrayList<Person> mothersSide, ArrayList<Person> fathersSide) {
-        boolean placeMarker = false;
-
-        String eventType = event.getEventType().toLowerCase();
-
-
-        if (UserDataStore.getInstance().getFilterPreferences().get(eventType)) {
-            placeMarker = true;
-        }
-        if (isMaleEvent(event) && !UserDataStore.getInstance().isShowMale()) {
-            placeMarker = false;
-        }
-        if (!isMaleEvent(event) && !UserDataStore.getInstance().isShowFemale()) {
-            placeMarker = false;
-        }
-        if (personDoesExist(getPersonFromEvent(event), mothersSide) && !UserDataStore.getInstance().isShowMother()) {
-            placeMarker = false;
-        }
-
-        if (personDoesExist(getPersonFromEvent(event), fathersSide) && !UserDataStore.getInstance().isShowFather()) {
-            placeMarker = false;
-        }
-
-
-        return placeMarker;
-    }
+//    private boolean shouldIncludeEvent(Event event, ArrayList<Person> mothersSide, ArrayList<Person> fathersSide) {
+//        boolean placeMarker = false;
+//
+//        String eventType = event.getEventType().toLowerCase();
+//
+//
+//        if (UserDataStore.getInstance().getFilterPreferences().get(eventType)) {
+//            placeMarker = true;
+//        }
+//        if (isMaleEvent(event) && !UserDataStore.getInstance().isShowMale()) {
+//            placeMarker = false;
+//        }
+//        if (!isMaleEvent(event) && !UserDataStore.getInstance().isShowFemale()) {
+//            placeMarker = false;
+//        }
+//        if (personDoesExist(getPersonFromEvent(event), mothersSide) && !UserDataStore.getInstance().isShowMother()) {
+//            placeMarker = false;
+//        }
+//
+//        if (personDoesExist(getPersonFromEvent(event), fathersSide) && !UserDataStore.getInstance().isShowFather()) {
+//            placeMarker = false;
+//        }
+//
+//
+//        return placeMarker;
+//    }
 
     private ArrayList<Person> compileAncestors(Person descendant, ArrayList<Person> ancestors) {
         ancestors.add(descendant);

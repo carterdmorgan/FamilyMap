@@ -35,6 +35,7 @@ import java.util.Map;
 
 import carterdmorgan.com.familymap.api.model.Event;
 import carterdmorgan.com.familymap.api.model.Person;
+import carterdmorgan.com.familymap.data.EventHelper;
 import carterdmorgan.com.familymap.data.MapType;
 import carterdmorgan.com.familymap.data.PersonHelper;
 import carterdmorgan.com.familymap.data.UserDataStore;
@@ -322,7 +323,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
         int color = UserDataStore.getInstance().getColorCode(UserDataStore.getInstance().getLifeStoryLineColor());
         ArrayList<Event> events
                 = UserDataStore.getInstance().getAllEventsForPerson(UserDataStore.getInstance().getPersonForEvent(event));
-        Collections.sort(events, Event.SORT_BY_YEAR_AND_NAME);
+        Collections.sort(events, EventHelper.SORT_BY_YEAR_THEN_NAME);
 
         for (int i = 0; i < events.size() - 1; i++) {
             Event event0 = events.get(i);

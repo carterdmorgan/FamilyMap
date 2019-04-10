@@ -14,23 +14,13 @@ public class Search {
         familyContainers.clear();
         lifeEventsContainers.clear();
 
-        for (Person person : UserDataStore.getInstance().getAllPersons()) {
-            if (person.getFirstName().toLowerCase().contains(s) || person.getLastName().toLowerCase().contains(s)) {
-                familyContainers.add(new FamilyContainer(person, null));
-            }
+        ArrayList<Person> persons = findAllPeopleMatchingQuery(s, UserDataStore.getInstance().getAllPersons());
+
+        for (Person person : persons) {
+            familyContainers.add(new FamilyContainer(person, null));
         }
 
-
-        ArrayList<Event> events = new ArrayList<>();
-
-        for (Event event : UserDataStore.getInstance().getFilteredEvents()) {
-            if (event.getEventType().toLowerCase().contains(s)
-                    || event.getCountry().toLowerCase().contains(s)
-                    || event.getCity().toLowerCase().contains(s)
-                    || Integer.toString(event.getYear()).toLowerCase().contains(s)) {
-                events.add(event);
-            }
-        }
+        ArrayList<Event> events = findAllEventsMatchingQuery(s, UserDataStore.getInstance().getFilteredEvents());
 
         for (Event event : events) {
             for (Person person : UserDataStore.getInstance().getAllPersons()) {
@@ -41,5 +31,32 @@ public class Search {
                 }
             }
         }
+    }
+
+    public ArrayList<Event> findAllEventsMatchingQuery(String s, ArrayList<Event> events) {
+        ArrayList<Event> included = new ArrayList<>();
+
+        for (Event event : events) {
+            if (event.getEventType().toLowerCase().contains(s)
+                    || event.getCountry().toLowerCase().contains(s)
+                    || event.getCity().toLowerCase().contains(s)
+                    || Integer.toString(event.getYear()).toLowerCase().contains(s)) {
+                included.add(event);
+            }
+        }
+
+        return included;
+    }
+
+    public ArrayList<Person> findAllPeopleMatchingQuery(String s, ArrayList<Person> persons) {
+        ArrayList<Person> included = new ArrayList<>();
+
+        for (Person person : persons) {
+            if (person.getFirstName().toLowerCase().contains(s) || person.getLastName().toLowerCase().contains(s)) {
+                included.add(person);
+            }
+        }
+
+        return included;
     }
 }

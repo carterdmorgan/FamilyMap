@@ -126,8 +126,7 @@ public class EventHelper {
 
         String eventType = event.getEventType().toLowerCase();
 
-
-        if (filterPreferences.get(eventType)) {
+        if (filterPreferences.get(eventType) == null || filterPreferences.get(eventType)) {
             eventShouldExist = true;
         }
         if (isMaleEvent(event) && !showMale) {
@@ -240,5 +239,21 @@ public class EventHelper {
 
     public void setShowFather(boolean showFather) {
         this.showFather = showFather;
+    }
+
+    @Override
+    public String toString() {
+        return "EventHelper{" +
+                "events=" + events +
+                ", personHelper=" + personHelper +
+                ", mothersSide=" + mothersSide +
+                ", fathersSide=" + fathersSide +
+                ", allPersons=" + allPersons +
+                ", filterPreferences=" + filterPreferences +
+                ", showMale=" + showMale +
+                ", showFemale=" + showFemale +
+                ", showMother=" + showMother +
+                ", showFather=" + showFather +
+                '}';
     }
 }
